@@ -1,26 +1,26 @@
 /* ===== Design Tokens ===== */
 :root {
-  --bg-primary: #F0F2F5; /* WhatsApp web background */
+  --bg-primary: #FCF5EB; /* WhatsApp Marketing Beige */
   --bg-secondary: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #F8F9FA;
-  --bg-glass: rgba(255, 255, 255, 0.9);
-  --border: #D1D7DB; /* WhatsApp border grey */
-  --border-hover: #8D969C;
-  --text-primary: #111B21; /* WhatsApp dark text */
-  --text-secondary: #54656F;
-  --text-muted: #667781;
+  --bg-card-hover: #FAFAF7;
+  --bg-glass: rgba(255, 255, 255, 0.95);
+  --border: #E0DCD3; /* Soft beige border */
+  --border-hover: #C9C4B8;
+  --text-primary: #1C1E21; /* WhatsApp Deep Black */
+  --text-secondary: #5E5E5E;
+  --text-muted: #828282;
   --accent: #25D366; /* WhatsApp Green */
   --accent-light: #128C7E; /* WhatsApp Teal */
-  --accent-glow: rgba(37, 211, 102, 0.25);
+  --accent-glow: rgba(37, 211, 102, 0.15);
   --accent-gradient: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
   --danger: #ef4444;
   --danger-hover: #dc2626;
-  --radius: 16px;
-  --radius-sm: 10px;
-  --radius-xs: 6px;
-  --shadow: 0 4px 12px rgba(17, 27, 33, 0.08);
-  --shadow-lg: 0 12px 32px rgba(17, 27, 33, 0.12);
+  --radius: 20px; /* Softer, rounder */
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --shadow: 0 8px 24px rgba(28, 30, 33, 0.06); /* Softer shadows */
+  --shadow-lg: 0 16px 40px rgba(28, 30, 33, 0.08);
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
