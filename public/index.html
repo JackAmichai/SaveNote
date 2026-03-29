@@ -77,7 +77,12 @@
             </div>
           </div>
           <button class="btn-add" id="btn-add-note" title="Add a note manually">
-            <span>+</span> Add Note
+            <span class="btn-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914zm-.006 1.636a8.274 8.274 0 0 0-8.278 8.278c0 1.5.385 2.96 1.115 4.254l-.8 2.936 3.012-.79a8.23 8.23 0 0 0 4.951 1.604 8.278 8.278 0 0 0 8.278-8.278 8.276 8.276 0 0 0-8.278-8.278z" />
+              </svg>
+            </span>
+            <span>Add Note</span>
           </button>
         </div>
       </div>
@@ -101,6 +106,27 @@
         </div>
       </div>
     </main>
+    
+    <section class="user-journey">
+      <h2 class="journey-title">How SaveNote Works</h2>
+      <div class="journey-steps">
+        <div class="journey-step">
+          <div class="journey-icon">💬</div>
+          <h3>1. Send a Message</h3>
+          <p>Send yourself a WhatsApp message with something you want to remember.</p>
+        </div>
+        <div class="journey-step">
+          <div class="journey-icon">🤖</div>
+          <h3>2. AI Categorizes</h3>
+          <p>Our local AI automatically tags and formats your new memory.</p>
+        </div>
+        <div class="journey-step">
+          <div class="journey-icon">🔍</div>
+          <h3>3. Recall Instantly</h3>
+          <p>Message "Where did I park?" or use this dashboard to find it.</p>
+        </div>
+      </div>
+    </section>
   </div>
 
   <!-- Add Note Modal -->
@@ -135,6 +161,37 @@
           <span class="btn-submit-loading" style="display:none;">
             <span class="loading-spinner small"></span> Saving...
           </span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- WhatsApp Try Me Popup -->
+  <div class="wa-fab" id="wa-fab" title="Try SaveNote">
+    <div class="wa-fab-badge" id="wa-badge" style="display: none;">1</div>
+    <svg viewBox="0 0 24 24"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914zm-.006 1.636a8.274 8.274 0 0 0-8.278 8.278c0 1.5.385 2.96 1.115 4.254l-.8 2.936 3.012-.79a8.23 8.23 0 0 0 4.951 1.604 8.278 8.278 0 0 0 8.278-8.278 8.276 8.276 0 0 0-8.278-8.278z" /></svg>
+  </div>
+
+  <div class="wa-popup" id="wa-popup">
+    <div class="wa-header">
+      <div class="wa-avatar">🤖</div>
+      <div class="wa-title">
+        <h4>SaveNote Bot</h4>
+        <p>Online</p>
+      </div>
+      <button class="wa-close" id="wa-close">✕</button>
+    </div>
+    <div class="wa-chat" id="wa-chat">
+      <div class="wa-bubble received">
+        Hey! 👋 I'm your memory assistant. Try sending me a message you'd want to remember.
+        <span class="wa-bubble-time">Just now</span>
+      </div>
+    </div>
+    <div class="wa-input-area">
+      <form id="wa-form" style="display:flex; width:100%; gap:8px;">
+        <input type="text" id="wa-input" placeholder="Message" autocomplete="off" required>
+        <button type="submit" id="wa-send" aria-label="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
       </form>
     </div>
@@ -434,6 +491,92 @@
     setInterval(() => {
       if (!isDemoMode) refresh();
     }, 10000);
+    // ===== WhatsApp Simulator Logic =====
+    const waFab = document.getElementById('wa-fab');
+    const waPopup = document.getElementById('wa-popup');
+    const waClose = document.getElementById('wa-close');
+    const waChat = document.getElementById('wa-chat');
+    const waForm = document.getElementById('wa-form');
+    const waInput = document.getElementById('wa-input');
+    const waBadge = document.getElementById('wa-badge');
+
+    // Simulate an initial unread message ping after 2s
+    setTimeout(() => {
+      waBadge.style.display = 'block';
+      waFab.style.transform = 'scale(1.1)';
+      setTimeout(() => waFab.style.transform = 'scale(1)', 200);
+    }, 2000);
+
+    waFab.addEventListener('click', () => {
+      waPopup.classList.add('open');
+      waFab.style.transform = 'scale(0)';
+      waBadge.style.display = 'none';
+      setTimeout(() => waInput.focus(), 300);
+    });
+
+    waClose.addEventListener('click', () => {
+      waPopup.classList.remove('open');
+      waFab.style.transform = 'scale(1)';
+    });
+
+    function addWaMessage(text, type, metaHTML = '') {
+      const bubble = document.createElement('div');
+      bubble.className = `wa-bubble ${type}`;
+      
+      const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      
+      bubble.innerHTML = `
+        ${escapeHtml(text)}
+        ${metaHTML}
+        <span class="wa-bubble-time">${time}</span>
+      `;
+      waChat.appendChild(bubble);
+      waChat.scrollTop = waChat.scrollHeight;
+    }
+
+    waForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = waInput.value.trim();
+      if (!message) return;
+
+      // Add user message to chat
+      addWaMessage(message, 'sent');
+      waInput.value = '';
+
+      // Create a "typing" delay simulation
+      setTimeout(async () => {
+        const lowerMsg = message.toLowerCase();
+        const isQuery = lowerMsg.startsWith('where') || lowerMsg.startsWith('what') || lowerMsg.startsWith('find');
+
+        if (isQuery) {
+          // Handle Query
+          let queryTerm = message.replace(/^(where did i park|where is my|what is|find) /i, '').trim();
+          if(!queryTerm) queryTerm = message; // Fallback if regex strips too much
+          
+          document.getElementById('search-input').value = queryTerm;
+          await refresh();
+
+          const notes = await fetchNotes(activeCategory, queryTerm);
+          
+          if (notes.length > 0) {
+             const resultHTML = `<br><br><strong>Found ${notes.length} result(s):</strong><br>` + 
+              notes.slice(0, 3).map(n => `📌 <em>${escapeHtml(n.summary)}</em>`).join('<br>');
+             addWaMessage(`Here's what I found:`, 'received', resultHTML);
+          } else {
+             addWaMessage(`I couldn't find anything matching your query. Try saving some information first!`, 'received');
+          }
+        } else {
+          // Handle Save
+          try {
+            const savedNote = await apiCreateNote('other', message); 
+            await refresh();
+            addWaMessage(`Got it! Saved as a new note: "${escapeHtml(message).substring(0, 30)}..."`, 'received');
+          } catch (err) {
+            addWaMessage(`Oops, I couldn't save that: ${err.message}`, 'received');
+          }
+        }
+      }, 600);
+    });
   </script>
 </body>
 </html>
