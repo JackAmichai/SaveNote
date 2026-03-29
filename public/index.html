@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaveNote — AI Memory Assistant</title>
+  <meta name="description" content="Save memories through WhatsApp, retrieve them when you need them. Powered by local AI.">
+  <meta name="theme-color" content="#6c5ce7">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/demo.js"></script>
+</head>
+<body>
+
+  <!-- Demo mode banner (hidden by default) -->
+  <div class="demo-banner" id="demo-banner" style="display: none;">
+    <span class="demo-banner-dot"></span>
+    <span>Demo Mode — Showing sample data. <a href="https://github.com/JackAmichai/SaveNote" target="_blank" rel="noopener">Run locally</a> for the full WhatsApp + AI experience.</span>
+  </div>
+
+  <!-- Hero / Landing Section -->
+  <section class="hero" id="hero-section">
+    <div class="hero-inner">
+      <div class="hero-badge">WhatsApp + AI</div>
+      <h1 class="hero-title">
+        <span class="hero-icon">📝</span>
+        Save<span class="hero-accent">Note</span>
+      </h1>
+      <p class="hero-subtitle">Send WhatsApp messages to yourself. AI remembers everything for you.</p>
+      <div class="hero-features">
+        <div class="hero-feature">
+          <span class="hero-feature-icon">💬</span>
+          <span>Send a message</span>
+        </div>
+        <div class="hero-feature-arrow">→</div>
+        <div class="hero-feature">
+          <span class="hero-feature-icon">🤖</span>
+          <span>AI categorizes it</span>
+        </div>
+        <div class="hero-feature-arrow">→</div>
+        <div class="hero-feature">
+          <span class="hero-feature-icon">🔍</span>
+          <span>Ask to recall</span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a href="#dashboard" class="btn-primary" id="hero-cta">View Dashboard</a>
+        <a href="https://github.com/JackAmichai/SaveNote" class="btn-secondary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+    <div class="hero-glow"></div>
+  </section>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">📝</span>
+          <span>SaveNote</span>
+        </div>
+        <div class="header-right">
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value" id="total-count">0</div>
+              <div class="stat-label">Notes</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="category-count">0</div>
+              <div class="stat-label">Categories</div>
+            </div>
+          </div>
+          <button class="btn-add" id="btn-add-note" title="Add a note manually">
+            <span>+</span> Add Note
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="search-box">
+        <svg class="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Search your memories..." autocomplete="off">
+      </div>
+      <div class="category-filters" id="category-filters">
+        <button class="filter-btn active" data-category="" onclick="filterByCategory(this, '')">All</button>
+      </div>
+    </div>
+
+    <main class="notes-container">
+      <div class="notes-grid" id="notes-grid">
+        <div class="loading-state" id="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading your memories...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Note Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="add-note-modal">
+      <div class="modal-header">
+        <h2>Add a Note</h2>
+        <button class="modal-close" id="modal-close" title="Close">✕</button>
+      </div>
+      <form id="add-note-form">
+        <div class="form-group">
+          <label for="note-summary">What do you want to remember?</label>
+          <textarea id="note-summary" rows="3" placeholder="e.g., I parked on level 3 section B at the mall" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="note-category">Category</label>
+          <div class="category-select" id="category-select">
+            <button type="button" class="cat-option active" data-cat="other">📌 other</button>
+            <button type="button" class="cat-option" data-cat="book">📚 book</button>
+            <button type="button" class="cat-option" data-cat="parking">🅿️ parking</button>
+            <button type="button" class="cat-option" data-cat="idea">💡 idea</button>
+            <button type="button" class="cat-option" data-cat="reminder">⏰ reminder</button>
+            <button type="button" class="cat-option" data-cat="location">📍 location</button>
+            <button type="button" class="cat-option" data-cat="person">👤 person</button>
+            <button type="button" class="cat-option" data-cat="recipe">🍳 recipe</button>
+            <button type="button" class="cat-option" data-cat="health">🏥 health</button>
+            <button type="button" class="cat-option" data-cat="finance">💰 finance</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="btn-submit">
+          <span class="btn-submit-text">Save Note</span>
+          <span class="btn-submit-loading" style="display:none;">
+            <span class="loading-spinner small"></span> Saving...
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>All processing happens locally with <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>. No cloud AI. Your data stays on your machine.</p>
+  </footer>
+
+  <script>
+    // ===== Configuration =====
+    const CATEGORY_EMOJI = {
+      book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
+      location: '📍', person: '👤', recipe: '🍳', health: '🏥',
+      finance: '💰', other: '📌'
+    };
+
+    let activeCategory = '';
+    let searchTimeout = null;
+    let isDemoMode = false;
+    let selectedCategory = 'other';
+
+    // ===== API Layer (with demo fallback) =====
+
+    async function checkBackend() {
+      try {
+        const res = await fetch('/api/health', { signal: AbortSignal.timeout(2000) });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    async function fetchNotes(category = '', search = '') {
+      if (isDemoMode) {
+        return window.SaveNoteDemo.getNotes(category, search);
+      }
+
+      const params = new URLSearchParams();
+      if (category) params.set('category', category);
+      if (search) params.set('search', search);
+
+      try {
+        const res = await fetch(`/api/notes?${params}`);
+        const data = await res.json();
+        return data.notes || [];
+      } catch (err) {
+        console.error('Failed to fetch notes:', err);
+        return [];
+      }
+    }
+
+    async function fetchCategories() {
+      if (isDemoMode) {
+        return window.SaveNoteDemo.getCategories();
+      }
+
+      try {
+        const res = await fetch('/api/categories');
+        const data = await res.json();
+        return data.categories || [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function apiDeleteNote(id) {
+      if (isDemoMode) {
+        window.SaveNoteDemo.deleteNote(id);
+        return true;
+      }
+
+      const res = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+      return res.ok;
+    }
+
+    async function apiCreateNote(category, summary) {
+      if (isDemoMode) {
+        return window.SaveNoteDemo.addNote(category, summary);
+      }
+
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, summary }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      return data.note;
+    }
+
+    // ===== Rendering =====
+
+    function renderNotes(notes) {
+      const grid = document.getElementById('notes-grid');
+
+      if (notes.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">💭</div>
+            <h3>No notes yet</h3>
+            <p>Send a WhatsApp message to yourself and it'll show up here, organized by AI.</p>
+            <button class="btn-primary small" onclick="openModal()">Add your first note</button>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = notes.map((note, i) => {
+        const emoji = CATEGORY_EMOJI[note.category] || '📌';
+        const meta = note.metadata || {};
+        const date = new Date(note.created_at + (note.created_at.includes('Z') ? '' : 'Z')).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+
+        const metaTags = Object.entries(meta)
+          .filter(([k, v]) => v && typeof v === 'string' && v.length < 60)
+          .map(([k, v]) => `<span class="meta-tag"><strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}</span>`)
+          .join('');
+
+        return `
+          <div class="note-card" data-id="${note.id}" style="animation-delay: ${i * 0.05}s">
+            <div class="note-header">
+              <span class="note-category cat-${note.category}">${emoji} ${note.category}</span>
+              <button class="note-delete" onclick="deleteNote(${note.id})" title="Delete note" aria-label="Delete note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="note-summary">${escapeHtml(note.summary)}</div>
+            ${metaTags ? `<div class="note-metadata">${metaTags}</div>` : ''}
+            <div class="note-date">${date}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderCategoryFilters(categories) {
+      const container = document.getElementById('category-filters');
+      const allBtn = `<button class="filter-btn${activeCategory === '' ? ' active' : ''}" data-category="" onclick="filterByCategory(this, '')">All</button>`;
+      const catBtns = categories.map(cat => {
+        const emoji = CATEGORY_EMOJI[cat] || '📌';
+        const isActive = activeCategory === cat ? ' active' : '';
+        return `<button class="filter-btn${isActive}" data-category="${cat}" onclick="filterByCategory(this, '${cat}')">${emoji} ${cat}</button>`;
+      }).join('');
+      container.innerHTML = allBtn + catBtns;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function animateCount(el, target) {
+      const current = parseInt(el.textContent) || 0;
+      if (current === target) return;
+      const duration = 400;
+      const start = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        el.textContent = Math.round(current + (target - current) * eased);
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // ===== Actions =====
+
+    async function filterByCategory(btn, category) {
+      activeCategory = category;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await refresh();
+    }
+
+    async function deleteNote(id) {
+      if (!confirm('Delete this note?')) return;
+      // Animate the card out
+      const card = document.querySelector(`.note-card[data-id="${id}"]`);
+      if (card) {
+        card.style.transform = 'scale(0.9)';
+        card.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 250));
+      }
+      try {
+        await apiDeleteNote(id);
+        await refresh();
+      } catch (err) {
+        console.error('Failed to delete:', err);
+      }
+    }
+
+    async function refresh() {
+      const search = document.getElementById('search-input').value.trim();
+      const notes = await fetchNotes(activeCategory, search);
+      renderNotes(notes);
+      animateCount(document.getElementById('total-count'), notes.length);
+
+      const categories = await fetchCategories();
+      animateCount(document.getElementById('category-count'), categories.length);
+      renderCategoryFilters(categories);
+    }
+
+    // ===== Modal =====
+
+    function openModal() {
+      document.getElementById('modal-overlay').classList.add('open');
+      document.getElementById('note-summary').focus();
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+      document.getElementById('add-note-form').reset();
+      // Reset category selection
+      document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
+      document.querySelector('.cat-option[data-cat="other"]').classList.add('active');
+      selectedCategory = 'other';
+    }
+
+    document.getElementById('btn-add-note').addEventListener('click', openModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Category selection in modal
+    document.querySelectorAll('.cat-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedCategory = btn.dataset.cat;
+      });
+    });
+
+    // Form submission
+    document.getElementById('add-note-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const summary = document.getElementById('note-summary').value.trim();
+      if (!summary) return;
+
+      const btnText = document.querySelector('.btn-submit-text');
+      const btnLoading = document.querySelector('.btn-submit-loading');
+      btnText.style.display = 'none';
+      btnLoading.style.display = 'inline-flex';
+
+      try {
+        await apiCreateNote(selectedCategory, summary);
+        closeModal();
+        await refresh();
+      } catch (err) {
+        alert('Failed to save note: ' + err.message);
+      } finally {
+        btnText.style.display = '';
+        btnLoading.style.display = 'none';
+      }
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ===== Search with debounce =====
+    document.getElementById('search-input').addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => refresh(), 300);
+    });
+
+    // ===== Smooth scroll for hero CTA =====
+    document.getElementById('hero-cta').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // ===== Init =====
+    async function init() {
+      const backendAvailable = await checkBackend();
+
+      if (!backendAvailable) {
+        isDemoMode = true;
+        document.getElementById('demo-banner').style.display = 'flex';
+        console.log('🎭 Backend not found — running in demo mode');
+      }
+
+      // Hide loading state
+      const loadingEl = document.getElementById('loading-state');
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      await refresh();
+    }
+
+    init();
+
+    // Auto-refresh only when backend is live
+    setInterval(() => {
+      if (!isDemoMode) refresh();
+    }, 10000);
+  </script>
+</body>
+</html>
