@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaveNote — AI Memory Assistant</title>
-  <meta name="description" content="Save memories through WhatsApp, retrieve them when you need them. Powered by local AI.">
-  <meta name="theme-color" content="#6c5ce7">
+  <title>SaveNote — AI Memory Assistant for WhatsApp</title>
+  <meta name="description" content="Send WhatsApp messages to yourself. AI remembers, categorizes, and retrieves everything for you. Free, private, and local.">
+  <meta name="theme-color" content="#008069">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,57 +15,279 @@
 </head>
 <body>
 
-  <!-- Demo mode banner (hidden by default) -->
+  <!-- ===== Navigation ===== -->
+  <nav class="nav" id="main-nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" id="nav-home-link">
+        <div class="nav-logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        </div>
+        <span>SaveNote</span>
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#privacy-section">Privacy</a></li>
+        <li><a href="#" id="nav-dashboard-link">Dashboard</a></li>
+        <li>
+          <a href="https://github.com/JackAmichai/SaveNote" target="_blank" rel="noopener" class="nav-github">
+            <svg viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </li>
+        <li><a href="#" class="nav-cta" id="nav-get-started">Get Started</a></li>
+      </ul>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== Demo Mode Banner ===== -->
   <div class="demo-banner" id="demo-banner" style="display: none;">
     <span class="demo-banner-dot"></span>
     <span>Demo Mode — Showing sample data. <a href="https://github.com/JackAmichai/SaveNote" target="_blank" rel="noopener">Run locally</a> for the full WhatsApp + AI experience.</span>
   </div>
 
-  <!-- Hero / Landing Section -->
-  <section class="hero" id="hero-section">
-    <div class="hero-inner">
-      <div class="hero-badge">WhatsApp + AI</div>
-      <h1 class="hero-title">
-        <span class="hero-icon">📝</span>
-        Save<span class="hero-accent">Note</span>
-      </h1>
-      <p class="hero-subtitle">Send WhatsApp messages to yourself. AI remembers everything for you.</p>
-      <div class="hero-features">
-        <div class="hero-feature">
-          <span class="hero-feature-icon">💬</span>
-          <span>Send a message</span>
-        </div>
-        <div class="hero-feature-arrow">→</div>
-        <div class="hero-feature">
-          <span class="hero-feature-icon">🤖</span>
-          <span>AI categorizes it</span>
-        </div>
-        <div class="hero-feature-arrow">→</div>
-        <div class="hero-feature">
-          <span class="hero-feature-icon">🔍</span>
-          <span>Ask to recall</span>
-        </div>
-      </div>
-      <div class="hero-actions">
-        <a href="#dashboard" class="btn-primary" id="hero-cta">View Dashboard</a>
-        <a href="https://github.com/JackAmichai/SaveNote" class="btn-secondary" target="_blank" rel="noopener">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
-          GitHub
-        </a>
-      </div>
-    </div>
-    <div class="hero-glow"></div>
-  </section>
+  <!-- ===== Landing Page ===== -->
+  <div id="landing-page">
 
-  <!-- Dashboard -->
-  <div id="dashboard">
-    <header class="header">
-      <div class="header-inner">
-        <div class="logo">
-          <span class="logo-icon">📝</span>
-          <span>SaveNote</span>
+    <!-- Hero -->
+    <section class="hero" id="hero-section">
+      <div class="hero-inner">
+        <h1 class="hero-title">
+          Simple, reliable, private<br><span class="accent">note-saving</span> for free
+        </h1>
+        <p class="hero-subtitle">
+          Send WhatsApp messages to yourself. AI remembers, categorizes,
+          and retrieves everything for you — all running locally on your machine.
+        </p>
+        <p class="hero-disclaimer">* Requires a local server with Ollama. Your data never leaves your device.</p>
+        <div class="hero-actions">
+          <a href="https://github.com/JackAmichai/SaveNote" class="btn-primary" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            Download
+          </a>
+          <a href="#" class="btn-secondary" id="hero-dashboard-link">
+            View Dashboard
+          </a>
         </div>
-        <div class="header-right">
+      </div>
+    </section>
+
+    <!-- Feature Sections -->
+    <div class="features" id="features">
+
+      <!-- Feature 1: Save everything -->
+      <section class="feature-section">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>Never miss<span class="break">a moment</span></h2>
+            <p>Quickly jot down parking spots, book titles, ideas, recipes, and more — just by sending yourself a WhatsApp message. SaveNote captures it all.</p>
+            <a href="#how-it-works" class="feature-link">
+              Learn more
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </a>
+          </div>
+          <div class="feature-visual">
+            <div class="feature-phone">
+              <div class="feature-phone-header">
+                <div class="feature-phone-avatar">📝</div>
+                <div class="feature-phone-name">SaveNote</div>
+              </div>
+              <div class="feature-phone-chat">
+                <div class="chat-msg sent">I parked on level 3 section B at the mall<span class="time">10:23 AM</span></div>
+                <div class="chat-msg received">🅿️ Got it! Saved under <strong>parking</strong>:<br><em>"Parked on level 3, section B at the mall"</em><span class="category-pill">parking</span><span class="time">10:23 AM</span></div>
+                <div class="chat-msg sent">Just finished Atomic Habits by James Clear<span class="time">10:25 AM</span></div>
+                <div class="chat-msg received">📚 Got it! Saved under <strong>book</strong>:<br><em>"Finished Atomic Habits by James Clear"</em><span class="category-pill">book</span><span class="time">10:25 AM</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature 2: AI Categorization -->
+      <section class="feature-section reverse">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>AI-powered<span class="break">organization</span></h2>
+            <p>Your notes are automatically sorted into smart categories by a local AI model. No cloud required — everything stays private on your device.</p>
+            <a href="#how-it-works" class="feature-link">
+              Learn more
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </a>
+          </div>
+          <div class="feature-visual">
+            <div class="feature-categories">
+              <div class="cat-card"><div class="cat-card-emoji">📚</div><div class="cat-card-name">Books</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">🅿️</div><div class="cat-card-name">Parking</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">💡</div><div class="cat-card-name">Ideas</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">⏰</div><div class="cat-card-name">Reminders</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">📍</div><div class="cat-card-name">Locations</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">🍳</div><div class="cat-card-name">Recipes</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">👤</div><div class="cat-card-name">People</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">💰</div><div class="cat-card-name">Finance</div></div>
+              <div class="cat-card"><div class="cat-card-emoji">🏥</div><div class="cat-card-name">Health</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature 3: Privacy -->
+      <section class="feature-section" id="privacy-section">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>Your data<span class="break">stays yours</span></h2>
+            <p>SaveNote runs entirely on your machine with Ollama. No cloud AI, no data collection, no tracking. Your memories are truly private.</p>
+            <a href="https://github.com/JackAmichai/SaveNote" class="feature-link" target="_blank" rel="noopener">
+              Learn more
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </a>
+          </div>
+          <div class="feature-visual">
+            <div class="privacy-visual">
+              <div class="privacy-shield">🔒</div>
+              <div class="privacy-tags">
+                <span class="privacy-tag">Local AI</span>
+                <span class="privacy-tag">No Cloud</span>
+                <span class="privacy-tag">Your Device</span>
+                <span class="privacy-tag">Open Source</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature 4: Recall -->
+      <section class="feature-section reverse">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>Ask and<span class="break">recall instantly</span></h2>
+            <p>Simply ask "Where did I park?" or "What books have I read?" — SaveNote searches your memories and replies right in WhatsApp.</p>
+            <a href="#" class="feature-link" id="feature-try-dashboard">
+              Try the dashboard
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+            </a>
+          </div>
+          <div class="feature-visual">
+            <div class="feature-phone">
+              <div class="feature-phone-header">
+                <div class="feature-phone-avatar">📝</div>
+                <div class="feature-phone-name">SaveNote</div>
+              </div>
+              <div class="feature-phone-chat">
+                <div class="chat-msg sent">Where did I park my car?<span class="time">2:10 PM</span></div>
+                <div class="chat-msg received">🔍 Here's what I found:<br><br>🅿️ Parked on level 3, section B at the mall<br><em>Saved 2 hours ago</em><span class="time">2:10 PM</span></div>
+                <div class="chat-msg sent">What books have I read?<span class="time">2:12 PM</span></div>
+                <div class="chat-msg received">📚 Your reading list:<br><br>1. Atomic Habits — James Clear ✅<br>2. Dune — Frank Herbert (reading)<br>3. Deep Work — Cal Newport (to-read)<span class="time">2:12 PM</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="how-it-works-inner">
+        <h2 class="section-title fade-in">How SaveNote Works</h2>
+        <p class="section-subtitle fade-in">Three simple steps to never forget anything again.</p>
+        <div class="steps-grid">
+          <div class="step-card fade-in">
+            <div class="step-number">1</div>
+            <h3>Send a Message</h3>
+            <p>Send yourself a WhatsApp message with anything you want to remember — a parking spot, book title, or a random idea.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-number">2</div>
+            <h3>AI Categorizes</h3>
+            <p>Your local AI model instantly analyzes the message, extracts key details, and files it under the right category.</p>
+          </div>
+          <div class="step-card fade-in">
+            <div class="step-number">3</div>
+            <h3>Recall Anytime</h3>
+            <p>Ask "Where did I park?" via WhatsApp or search the dashboard. Your memories are always just a message away.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="cta-inner fade-in">
+        <h2>Get started with SaveNote</h2>
+        <p>Clone the repository, run locally with Ollama, and start saving memories through WhatsApp in minutes.</p>
+        <div class="cta-buttons">
+          <a href="https://github.com/JackAmichai/SaveNote" class="btn-primary" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            Download from GitHub
+          </a>
+          <a href="#" class="btn-secondary" id="cta-dashboard-link">
+            View Dashboard Demo
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="footer-logo-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+            </div>
+            SaveNote
+          </div>
+          <p>AI-powered memory assistant for WhatsApp. Save and retrieve anything with a simple message. All processing happens locally with Ollama.</p>
+        </div>
+        <div class="footer-column">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#privacy-section">Privacy</a></li>
+            <li><a href="#" id="footer-dashboard-link">Dashboard</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="https://github.com/JackAmichai/SaveNote" target="_blank" rel="noopener">GitHub</a></li>
+            <li><a href="https://github.com/JackAmichai/SaveNote#readme" target="_blank" rel="noopener">Documentation</a></li>
+            <li><a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Technical</h4>
+          <ul>
+            <li><a href="https://github.com/niccokunzmann/whatsapp-web.js" target="_blank" rel="noopener">WhatsApp Web.js</a></li>
+            <li><a href="https://github.com/niccokunzmann/whatsapp-web.js" target="_blank" rel="noopener">Local AI</a></li>
+            <li><a href="https://github.com/JackAmichai/SaveNote/issues" target="_blank" rel="noopener">Report Bug</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; 2026 SaveNote. Open Source under MIT License.</span>
+        <span>Made with ❤️ by <a href="https://github.com/JackAmichai" target="_blank" rel="noopener">Jack Amichai</a></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ===== Dashboard (hidden by default) ===== -->
+  <div class="dashboard-section" id="dashboard">
+    <div class="dashboard-header">
+      <div class="dashboard-header-inner">
+        <div class="dashboard-header-left">
+          <a href="#" class="back-to-home" id="back-to-home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+          </a>
+          <span class="dashboard-title">📝 Your Notes</span>
+        </div>
+        <div class="dashboard-header-right">
           <div class="stats">
             <div class="stat">
               <div class="stat-value" id="total-count">0</div>
@@ -78,15 +300,13 @@
           </div>
           <button class="btn-add" id="btn-add-note" title="Add a note manually">
             <span class="btn-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914zm-.006 1.636a8.274 8.274 0 0 0-8.278 8.278c0 1.5.385 2.96 1.115 4.254l-.8 2.936 3.012-.79a8.23 8.23 0 0 0 4.951 1.604 8.278 8.278 0 0 0 8.278-8.278 8.276 8.276 0 0 0-8.278-8.278z" />
-              </svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </span>
             <span>Add Note</span>
           </button>
         </div>
       </div>
-    </header>
+    </div>
 
     <div class="controls">
       <div class="search-box">
@@ -106,30 +326,9 @@
         </div>
       </div>
     </main>
-    
-    <section class="user-journey">
-      <h2 class="journey-title">How SaveNote Works</h2>
-      <div class="journey-steps">
-        <div class="journey-step">
-          <div class="journey-icon">💬</div>
-          <h3>1. Send a Message</h3>
-          <p>Send yourself a WhatsApp message with something you want to remember.</p>
-        </div>
-        <div class="journey-step">
-          <div class="journey-icon">🤖</div>
-          <h3>2. AI Categorizes</h3>
-          <p>Our local AI automatically tags and formats your new memory.</p>
-        </div>
-        <div class="journey-step">
-          <div class="journey-icon">🔍</div>
-          <h3>3. Recall Instantly</h3>
-          <p>Message "Where did I park?" or use this dashboard to find it.</p>
-        </div>
-      </div>
-    </section>
   </div>
 
-  <!-- Add Note Modal -->
+  <!-- ===== Add Note Modal ===== -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal" id="add-note-modal">
       <div class="modal-header">
@@ -166,10 +365,10 @@
     </div>
   </div>
 
-  <!-- WhatsApp Try Me Popup -->
+  <!-- ===== WhatsApp Try Me Popup ===== -->
   <div class="wa-fab" id="wa-fab" title="Try SaveNote">
     <div class="wa-fab-badge" id="wa-badge" style="display: none;">1</div>
-    <svg viewBox="0 0 24 24"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914zm-.006 1.636a8.274 8.274 0 0 0-8.278 8.278c0 1.5.385 2.96 1.115 4.254l-.8 2.936 3.012-.79a8.23 8.23 0 0 0 4.951 1.604 8.278 8.278 0 0 0 8.278-8.278 8.276 8.276 0 0 0-8.278-8.278z" /></svg>
+    <svg viewBox="0 0 24 24"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914zm-.006 1.636a8.274 8.274 0 0 0-8.278 8.278c0 1.5.385 2.96 1.115 4.254l-.8 2.936 3.012-.79a8.23 8.23 0 0 0 4.951 1.604 8.278 8.278 0 0 0 8.278-8.278 8.276 8.276 0 0 0-8.278-8.278z"/></svg>
   </div>
 
   <div class="wa-popup" id="wa-popup">
@@ -197,10 +396,6 @@
     </div>
   </div>
 
-  <footer class="footer">
-    <p>All processing happens locally with <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>. No cloud AI. Your data stays on your machine.</p>
-  </footer>
-
   <script>
     // ===== Configuration =====
     const CATEGORY_EMOJI = {
@@ -213,9 +408,63 @@
     let searchTimeout = null;
     let isDemoMode = false;
     let selectedCategory = 'other';
+    let currentView = 'landing'; // 'landing' or 'dashboard'
+
+    // ===== View Switching =====
+    function showLanding() {
+      currentView = 'landing';
+      document.getElementById('landing-page').style.display = '';
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('main-nav').style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showDashboard() {
+      currentView = 'dashboard';
+      document.getElementById('landing-page').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      document.getElementById('main-nav').style.display = '';
+      window.scrollTo({ top: 0 });
+      refresh();
+    }
+
+    // Wire up all dashboard links
+    document.getElementById('nav-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('nav-get-started').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('hero-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('feature-try-dashboard').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('cta-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('footer-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('back-to-home').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
+    document.getElementById('nav-home-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentView === 'dashboard') showLanding();
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // ===== Scroll effects =====
+    // Navbar shadow on scroll
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('main-nav');
+      if (window.scrollY > 10) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+    });
+
+    // Intersection Observer for fade-in animations
+    const fadeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 
     // ===== API Layer (with demo fallback) =====
-
     async function checkBackend() {
       try {
         const res = await fetch('/api/health', { signal: AbortSignal.timeout(2000) });
@@ -229,11 +478,9 @@
       if (isDemoMode) {
         return window.SaveNoteDemo.getNotes(category, search);
       }
-
       const params = new URLSearchParams();
       if (category) params.set('category', category);
       if (search) params.set('search', search);
-
       try {
         const res = await fetch(`/api/notes?${params}`);
         const data = await res.json();
@@ -248,7 +495,6 @@
       if (isDemoMode) {
         return window.SaveNoteDemo.getCategories();
       }
-
       try {
         const res = await fetch('/api/categories');
         const data = await res.json();
@@ -263,7 +509,6 @@
         window.SaveNoteDemo.deleteNote(id);
         return true;
       }
-
       const res = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
       return res.ok;
     }
@@ -272,7 +517,6 @@
       if (isDemoMode) {
         return window.SaveNoteDemo.addNote(category, summary);
       }
-
       const res = await fetch('/api/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,10 +528,8 @@
     }
 
     // ===== Rendering =====
-
     function renderNotes(notes) {
       const grid = document.getElementById('notes-grid');
-
       if (notes.length === 0) {
         grid.innerHTML = `
           <div class="empty-state">
@@ -298,7 +540,6 @@
           </div>`;
         return;
       }
-
       grid.innerHTML = notes.map((note, i) => {
         const emoji = CATEGORY_EMOJI[note.category] || '📌';
         const meta = note.metadata || {};
@@ -306,12 +547,10 @@
           year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
-
         const metaTags = Object.entries(meta)
           .filter(([k, v]) => v && typeof v === 'string' && v.length < 60)
           .map(([k, v]) => `<span class="meta-tag"><strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}</span>`)
           .join('');
-
         return `
           <div class="note-card" data-id="${note.id}" style="animation-delay: ${i * 0.05}s">
             <div class="note-header">
@@ -351,7 +590,7 @@
       const start = performance.now();
       function tick(now) {
         const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
         el.textContent = Math.round(current + (target - current) * eased);
         if (progress < 1) requestAnimationFrame(tick);
       }
@@ -359,7 +598,6 @@
     }
 
     // ===== Actions =====
-
     async function filterByCategory(btn, category) {
       activeCategory = category;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -369,7 +607,6 @@
 
     async function deleteNote(id) {
       if (!confirm('Delete this note?')) return;
-      // Animate the card out
       const card = document.querySelector(`.note-card[data-id="${id}"]`);
       if (card) {
         card.style.transform = 'scale(0.9)';
@@ -389,14 +626,12 @@
       const notes = await fetchNotes(activeCategory, search);
       renderNotes(notes);
       animateCount(document.getElementById('total-count'), notes.length);
-
       const categories = await fetchCategories();
       animateCount(document.getElementById('category-count'), categories.length);
       renderCategoryFilters(categories);
     }
 
     // ===== Modal =====
-
     function openModal() {
       document.getElementById('modal-overlay').classList.add('open');
       document.getElementById('note-summary').focus();
@@ -407,7 +642,6 @@
       document.getElementById('modal-overlay').classList.remove('open');
       document.body.style.overflow = '';
       document.getElementById('add-note-form').reset();
-      // Reset category selection
       document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
       document.querySelector('.cat-option[data-cat="other"]').classList.add('active');
       selectedCategory = 'other';
@@ -419,7 +653,6 @@
       if (e.target === e.currentTarget) closeModal();
     });
 
-    // Category selection in modal
     document.querySelectorAll('.cat-option').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
@@ -428,17 +661,14 @@
       });
     });
 
-    // Form submission
     document.getElementById('add-note-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const summary = document.getElementById('note-summary').value.trim();
       if (!summary) return;
-
       const btnText = document.querySelector('.btn-submit-text');
       const btnLoading = document.querySelector('.btn-submit-loading');
       btnText.style.display = 'none';
       btnLoading.style.display = 'inline-flex';
-
       try {
         await apiCreateNote(selectedCategory, summary);
         closeModal();
@@ -451,7 +681,6 @@
       }
     });
 
-    // Close modal on Escape
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
@@ -462,35 +691,26 @@
       searchTimeout = setTimeout(() => refresh(), 300);
     });
 
-    // ===== Smooth scroll for hero CTA =====
-    document.getElementById('hero-cta').addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
-    });
-
     // ===== Init =====
     async function init() {
       const backendAvailable = await checkBackend();
-
       if (!backendAvailable) {
         isDemoMode = true;
         document.getElementById('demo-banner').style.display = 'flex';
         console.log('🎭 Backend not found — running in demo mode');
       }
-
       // Hide loading state
       const loadingEl = document.getElementById('loading-state');
       if (loadingEl) loadingEl.style.display = 'none';
-
-      await refresh();
     }
 
     init();
 
-    // Auto-refresh only when backend is live
+    // Auto-refresh dashboard when visible
     setInterval(() => {
-      if (!isDemoMode) refresh();
+      if (!isDemoMode && currentView === 'dashboard') refresh();
     }, 10000);
+
     // ===== WhatsApp Simulator Logic =====
     const waFab = document.getElementById('wa-fab');
     const waPopup = document.getElementById('wa-popup');
@@ -500,12 +720,11 @@
     const waInput = document.getElementById('wa-input');
     const waBadge = document.getElementById('wa-badge');
 
-    // Simulate an initial unread message ping after 2s
     setTimeout(() => {
       waBadge.style.display = 'block';
       waFab.style.transform = 'scale(1.1)';
       setTimeout(() => waFab.style.transform = 'scale(1)', 200);
-    }, 2000);
+    }, 3000);
 
     waFab.addEventListener('click', () => {
       waPopup.classList.add('open');
@@ -522,14 +741,8 @@
     function addWaMessage(text, type, metaHTML = '') {
       const bubble = document.createElement('div');
       bubble.className = `wa-bubble ${type}`;
-      
       const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      
-      bubble.innerHTML = `
-        ${escapeHtml(text)}
-        ${metaHTML}
-        <span class="wa-bubble-time">${time}</span>
-      `;
+      bubble.innerHTML = `${escapeHtml(text)}${metaHTML}<span class="wa-bubble-time">${time}</span>`;
       waChat.appendChild(bubble);
       waChat.scrollTop = waChat.scrollHeight;
     }
@@ -538,44 +751,54 @@
       e.preventDefault();
       const message = waInput.value.trim();
       if (!message) return;
-
-      // Add user message to chat
       addWaMessage(message, 'sent');
       waInput.value = '';
 
-      // Create a "typing" delay simulation
       setTimeout(async () => {
         const lowerMsg = message.toLowerCase();
         const isQuery = lowerMsg.startsWith('where') || lowerMsg.startsWith('what') || lowerMsg.startsWith('find');
 
         if (isQuery) {
-          // Handle Query
           let queryTerm = message.replace(/^(where did i park|where is my|what is|find) /i, '').trim();
-          if(!queryTerm) queryTerm = message; // Fallback if regex strips too much
-          
+          if (!queryTerm) queryTerm = message;
           document.getElementById('search-input').value = queryTerm;
-          await refresh();
+          if (currentView === 'dashboard') await refresh();
 
           const notes = await fetchNotes(activeCategory, queryTerm);
-          
           if (notes.length > 0) {
-             const resultHTML = `<br><br><strong>Found ${notes.length} result(s):</strong><br>` + 
+            const resultHTML = `<br><br><strong>Found ${notes.length} result(s):</strong><br>` +
               notes.slice(0, 3).map(n => `📌 <em>${escapeHtml(n.summary)}</em>`).join('<br>');
-             addWaMessage(`Here's what I found:`, 'received', resultHTML);
+            addWaMessage(`Here's what I found:`, 'received', resultHTML);
           } else {
-             addWaMessage(`I couldn't find anything matching your query. Try saving some information first!`, 'received');
+            addWaMessage(`I couldn't find anything matching your query. Try saving some information first!`, 'received');
           }
         } else {
-          // Handle Save
           try {
-            const savedNote = await apiCreateNote('other', message); 
-            await refresh();
+            await apiCreateNote('other', message);
+            if (currentView === 'dashboard') await refresh();
             addWaMessage(`Got it! Saved as a new note: "${escapeHtml(message).substring(0, 30)}..."`, 'received');
           } catch (err) {
             addWaMessage(`Oops, I couldn't save that: ${err.message}`, 'received');
           }
         }
       }, 600);
+    });
+
+    // ===== Mobile nav hamburger =====
+    const hamburger = document.getElementById('nav-hamburger');
+    const navLinks = document.getElementById('nav-links');
+    hamburger.addEventListener('click', () => {
+      navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+      navLinks.style.position = 'absolute';
+      navLinks.style.top = '64px';
+      navLinks.style.left = '0';
+      navLinks.style.right = '0';
+      navLinks.style.flexDirection = 'column';
+      navLinks.style.background = 'var(--bg-white)';
+      navLinks.style.padding = '16px 24px';
+      navLinks.style.borderBottom = '1px solid var(--border)';
+      navLinks.style.boxShadow = 'var(--shadow)';
+      navLinks.style.gap = '8px';
     });
   </script>
 </body>
