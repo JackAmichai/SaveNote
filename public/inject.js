@@ -1,6 +1,6 @@
 /**
  * SaveNote - WhatsApp Web Native Injector (Bookmarklet Version)
- * Pixel-Perfect Native Bot Mode without Extension - FIXED
+ * Pixel-Perfect Native Bot Mode without Extension - FIXED v2
  */
 (function () {
   'use strict';
@@ -34,7 +34,6 @@
   };
 
   var BOT_NAME = 'SaveNote AI';
-  var BOT_COLOR = '#008069';
   var lastProcessedMessages = new Set();
 
   function categorize(t) {
@@ -64,26 +63,7 @@
     }
   }
 
-  function exportNotes() {
-    var notes = loadNotes();
-    return JSON.stringify(notes, null, 2);
-  }
-
-  function importNotes(jsonStr) {
-    try {
-      var imported = JSON.parse(jsonStr);
-      if (Array.isArray(imported)) {
-        localStorage.setItem('savenote_data', JSON.stringify(imported));
-        return true;
-      }
-      return false;
-    } catch (e) {
-      console.error('[SaveNote] Error importing notes:', e);
-      return false;
-    }
-  }
-
-  // SVG for bot avatar (single line, no template literals)
+  // SVG for bot avatar
   var BOT_SVG = '<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="' + BOT_COLOR + '"></circle><text x="12" y="17" text-anchor="middle" fill="white" font-size="14" font-weight="bold">S</text></svg>';
 
   // SVG tail for bot message
@@ -155,7 +135,6 @@
           }, 1400);
         }
       }
-
       var chatTitles = document.querySelectorAll('.sn-sidebar-identity');
       chatTitles.forEach(function(el) {
         var parent = el.closest('[data-testid="cell-frame-container"]');
@@ -180,29 +159,24 @@
   function injectBotReply(html) {
     try {
       var chatPane = document.querySelector('[data-testid="conversation-panel-body"]') ||
-        document.querySelector('[data-testid="conversation-panel-messages"]') ||
-        document.querySelector('.copyable-area [role="application"]') ||
-        document.querySelector('#main .copyable-area') ||
-        document.querySelector('[role="list"]');
-
+                     document.querySelector('[data-testid="conversation-panel-messages"]') ||
+                     document.querySelector('.copyable-area [role="application"]') ||
+                     document.querySelector('#main .copyable-area') ||
+                     document.querySelector('[role="list"]');
       if (!chatPane) {
         console.warn('[SaveNote] Chat pane not found for bot reply');
         return;
       }
-
       if (!document.getElementById('sn-bot-css')) {
         var style = document.createElement('style');
         style.id = 'sn-bot-css';
         style.textContent = '.sn-bot-msg-row{display:flex;flex-direction:column;width:100%;margin-bottom:2px;align-items:flex-start;animation:sn-fade-in .2s ease-out}@keyframes sn-fade-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.sn-bot-bubble-wrapper{position:relative;display:flex;max-width:65%;margin-left:9px;margin-bottom:8px;margin-top:8px}.sn-bot-tail{position:absolute;top:0;left:-8px;width:8px;height:13px;color:#fff;z-index:100}[data-theme="dark"] .sn-bot-tail{color:#202c33}.sn-bot-bubble{background-color:#fff;border-radius:0 7.5px 7.5px 7.5px;padding:6px 7px 8px 9px;box-shadow:0 1px .5px rgba(11,20,26,.13);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#111b21;font-size:14.2px;line-height:19px;display:flex;flex-direction:column;min-width:120px}[data-theme="dark"] .sn-bot-bubble{background-color:#202c33;color:#e9edef}.sn-bot-name{font-size:12.8px;font-weight:500;color:#008069;margin-bottom:2px;line-height:22px}[data-theme="dark"] .sn-bot-name{color:#00a884}.sn-bot-text{word-break:break-word;white-space:pre-wrap;margin-bottom:4px}.sn-bot-meta{display:flex;justify-content:flex-end;align-items:center;margin-top:-10px;float:right;margin-left:14px}.sn-bot-time{font-size:11px;color:#667781;margin-top:10px}[data-theme="dark"] .sn-bot-time{color:#8696a0}.sn-sidebar-identity{color:#008069!important;font-weight:500!important}[data-theme="dark"] .sn-sidebar-identity{color:#00a884!important}.sn-typing-text{color:#008069!important;font-size:13px!important;font-weight:400!important;font-family:inherit}[data-theme="dark"] .sn-typing-text{color:#00a884!important}';
         document.head.appendChild(style);
       }
-
       var row = document.createElement('div');
       row.className = 'sn-bot-msg-row';
       var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       row.innerHTML = '<div class="sn-bot-bubble-wrapper">' + TAIL_SVG + '<div class="sn-bot-bubble"><div class="sn-bot-name">' + BOT_NAME + '</div><div class="sn-bot-text">' + html + '</div><div class="sn-bot-meta"><span class="sn-bot-time">' + nowStr + '</span></div></div></div>';
-
-      var list = chatPane.querySelector('[role="list"]') || chatPane;
       list.appendChild(row);
       setTimeout(function() {
         chatPane.scrollTop = chatPane.scrollHeight + 500;
@@ -215,7 +189,6 @@
   function handleCommand(text) {
     var lower = text.toLowerCase();
     var notes = loadNotes();
-
     if (lower.indexOf('what') !== -1 && lower.indexOf('book') !== -1) {
       var books = notes.filter(function(n) { return n.category === 'book'; });
       simulateTyping();
@@ -229,7 +202,6 @@
       }, 1500);
       return true;
     }
-
     if (lower.indexOf('where') !== -1 && lower.indexOf('park') !== -1) {
       var p = notes.find(function(n) { return n.category === 'parking'; });
       simulateTyping();
@@ -242,7 +214,6 @@
       }, 1500);
       return true;
     }
-
     if (lower.indexOf('what') !== -1 && lower.indexOf('shopping') !== -1) {
       var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
       simulateTyping();
@@ -256,7 +227,6 @@
       }, 1500);
       return true;
     }
-
     if (lower.indexOf('what') !== -1 && lower.indexOf('note') !== -1) {
       var all = notes.slice(0, 10);
       simulateTyping();
@@ -270,7 +240,6 @@
       }, 1500);
       return true;
     }
-
     if (/\b(help|hi|hello)\b/.test(lower)) {
       simulateTyping();
       setTimeout(function() {
@@ -278,10 +247,8 @@
       }, 1500);
       return true;
     }
-
     return false;
   }
-
   function processNewElements(el) {
     try {
       var msgContainers = [];
@@ -291,7 +258,6 @@
           msgContainers.push(el);
         }
       }
-
       for (var i = 0; i < msgContainers.length; i++) {
         var container = msgContainers[i];
         var dataId = container.getAttribute('data-id');
@@ -299,33 +265,28 @@
         var isOutgoingClass = container.closest('.message-out') || (container.classList && container.classList.contains('message-out'));
         var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
         var isIncomingCheck = container.closest('.message-in') || (container.classList && container.classList.contains('message-in'));
-
         if (isIncomingCheck) continue;
         var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
         if (!isOutgoing) continue;
-
         var textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') ||
-          container.querySelector('.selectable-text') ||
-          container.querySelector('span.copyable-text') ||
-          container.querySelector('[data-pre-plain-text]') ||
-          container.querySelector('span[aria-hidden="true"]');
-
+                          container.querySelector('.selectable-text') ||
+                          container.querySelector('span.copyable-text') ||
+                          container.querySelector('[data-pre-plain-text]') ||
+                          container.querySelector('span[aria-hidden="true"]');
         if (!textWrapper) continue;
         var text = textWrapper.textContent.trim();
         if (!text || text.length < 2) continue;
         if (lastProcessedMessages.has(text)) continue;
         lastProcessedMessages.add(text);
         console.log('[SaveNote] Intercepted new outgoing message:', text);
-
         var header = document.querySelector('header') || document.querySelector('[data-testid="conversation-header"]');
         if (header) {
           var titleEl = header.querySelector('span[title]') ||
-            header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
-            header.querySelector('[data-testid="chat-subtitle"]')?.previousElementSibling;
+                        header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
+                        header.querySelector('[data-testid="chat-subtitle"]');
           var title = titleEl ? (titleEl.textContent || titleEl.getAttribute('title') || '') : '';
           var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
           var isSelf = title.indexOf(BOT_NAME) !== -1 || cleanTx.indexOf('(you)') !== -1 || cleanTx === 'you' || cleanTx === 'me' || cleanTx === '\u05D0\u05E0\u05D9';
-
           if (isSelf) {
             console.log('[SaveNote] Self-chat confirmed! Processing...');
             if (!handleCommand(text)) {
@@ -362,7 +323,6 @@
 
   // ===== Init =====
   setInterval(hijackIdentity, 1500);
-
   var observer = new MutationObserver(function(mutations) {
     for (var i = 0; i < mutations.length; i++) {
       var mutation = mutations[i];
@@ -374,9 +334,7 @@
       }
     }
   });
-
   var app = document.querySelector('#app') || document.body;
   if (app) observer.observe(app, { childList: true, subtree: true });
-
   console.log('[SaveNote] Pixel-Perfect Native Bookmarklet Ready');
 })();
