@@ -143,13 +143,14 @@ class DemoMode {
     return false;
   }
 
-  addNote(category, summary) {
+  addNote(category, summary, attachments = []) {
     const note = {
       id: this.nextId++,
       category: category || 'other',
       summary,
       raw_message: summary,
       metadata: {},
+      attachments: attachments,
       created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
     };
     this.notes.unshift(note);

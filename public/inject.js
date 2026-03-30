@@ -1,317 +1,203 @@
 /**
- * SaveNote — WhatsApp Web Injector
- * Injected via bookmarklet. Creates a floating panel on WhatsApp Web.
- * No extension, no install, no backend required.
+ * SaveNote — WhatsApp Web Native Injector (Bookmarklet Version)
+ * Hijacks the "Self-Chat" to act as the AI bot.
+ * No extensions, no install.
  */
+
 (function () {
   'use strict';
-  if (document.getElementById('sn-fab')) return; // already injected
 
-  var EMOJIS = {
-    book:'📚',parking:'🅿️',idea:'💡',reminder:'⏰',location:'📍',
-    person:'👤',recipe:'🍳',health:'🏥',finance:'💰',other:'📌'
-  };
-  var KEYWORDS = {
-    parking:/\b(park|parked|car|garage|level|floor|section|lot|spot)\b/i,
-    book:/\b(book|read|reading|author|novel|chapter|finished|started)\b/i,
-    idea:/\b(idea|thought|maybe|what if|concept|brainstorm|should try)\b/i,
-    reminder:/\b(remind|remember|don't forget|todo|task|buy|call|schedule)\b/i,
-    location:/\b(place|address|street|restaurant|cafe|bar|shop|found a)\b/i,
-    person:/\b(met |person|name is|works at|contact|friend|colleague)\b/i,
-    recipe:/\b(recipe|cook|ingredient|food|dish|meal|bake)\b/i,
-    health:/\b(health|doctor|medicine|symptom|hospital|vitamin)\b/i,
-    finance:/\b(money|pay|paid|cost|price|expense|bank|\$|₪|€)\b/i
+  // ===== Configuration =====
+  var CATEGORY_EMOJI = {
+    book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
+    location: '📍', person: '👤', recipe: '🍳', health: '🏥',
+    finance: '💰', shopping: '🛒', other: '📌',
   };
 
-  function categorize(t){for(var k in KEYWORDS)if(KEYWORDS[k].test(t))return k;return'other';}
-  function loadNotes(){try{return JSON.parse(localStorage.getItem('savenote_data'))||[];}catch(e){return[];}}
+  var CATEGORY_KEYWORDS = {
+    parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
+    book: /\b(book|read|reading|author|novel|chapter|finished|started|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
+    idea: /\b(idea|thought|maybe|what if|concept|brainstorm|should try|רעיון|אולי|מה אם)\b/i,
+    reminder: /\b(remind|remember|don't forget|todo|task|buy|call|schedule|תזכורת|לזכור|לקנות|פגישה)\b/i,
+    location: /\b(place|address|street|restaurant|cafe|bar|shop|found a|מקום|כתובת|מסעדה|רחוב)\b/i,
+    person: /\b(met |person|name is|works at|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
+    recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|מתכון|בישול|אוכל)\b/i,
+    health: /\b(health|doctor|medicine|symptom|hospital|vitamin|רופא|בריאות|תרופה)\b/i,
+    finance: /\b(money|pay|paid|cost|price|expense|bank|כסף|שילמתי|עלות|הוצאה)\b/i,
+    shopping: /\b(shop|shopping|buy|groceries|supermarket|market|shoes|clothes|קניות|סופר|לקנות)\b/i
+  };
+
+  var BOT_NAME = 'SaveNote AI 💬';
+  var BOT_COLOR = '#008069';
+  var lastProcessedMessages = new Set();
+
+  function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
+  function loadNotes(){try{return JSON.parse(localStorage.getItem('savenote_data'))||[];}catch(e){return [];}}
   function saveNotes(n){localStorage.setItem('savenote_data',JSON.stringify(n));}
-  function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-  function ts(){return new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
 
-  // ===== Inject CSS =====
-  var css = document.createElement('style');
-  css.textContent = `
-    #sn-fab{position:fixed;bottom:20px;left:20px;width:52px;height:52px;background:#008069;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:99999;box-shadow:0 3px 12px rgba(0,128,105,.4);transition:transform .2s;font-size:22px;user-select:none}
-    #sn-fab:hover{transform:scale(1.1)}
-    #sn-fab.hide{transform:scale(0);pointer-events:none}
-    #sn-panel{position:fixed;top:0;right:-380px;width:370px;height:100vh;background:#fff;z-index:99998;display:flex;flex-direction:column;box-shadow:-3px 0 20px rgba(0,0,0,.1);transition:right .3s cubic-bezier(.4,0,.2,1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    #sn-panel.open{right:0}
-    .sn-hdr{background:#008069;color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    .sn-hdr-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
-    .sn-hdr-btns{display:flex;gap:4px}
-    .sn-hdr-btns button{width:32px;height:32px;border:0;background:rgba(255,255,255,.15);color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s}
-    .sn-hdr-btns button:hover{background:rgba(255,255,255,.25)}
-    .sn-search{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#f0f2f5;border-bottom:1px solid #e9edef;flex-shrink:0}
-    .sn-search input{flex:1;border:0;background:0;font-size:13px;outline:0;color:#111b21;font-family:inherit}
-    .sn-search input::placeholder{color:#8696a0}
-    .sn-filters{display:flex;gap:5px;padding:8px 12px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid #e9edef;scrollbar-width:none}
-    .sn-filters::-webkit-scrollbar{display:none}
-    .sn-filters button{padding:4px 10px;border:1px solid #e9edef;border-radius:16px;background:#fff;color:#54656f;font-size:11px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s}
-    .sn-filters button:hover{background:#f0f2f5}
-    .sn-filters button.on{background:#008069;border-color:#008069;color:#fff}
-    .sn-list{flex:1;overflow-y:auto;padding:6px}
-    .sn-card{background:#fff;border:1px solid #e9edef;border-radius:8px;padding:10px 12px;margin-bottom:6px;transition:border-color .15s;position:relative}
-    .sn-card:hover{border-color:#25d366}
-    .sn-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-    .sn-cat{font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 7px;border-radius:10px;background:rgba(0,128,105,.08);color:#008069}
-    .sn-del{width:20px;height:20px;border:0;background:0;color:#8696a0;cursor:pointer;font-size:12px;border-radius:4px;opacity:0;transition:all .15s}
-    .sn-card:hover .sn-del{opacity:1}
-    .sn-del:hover{color:#ef4444;background:rgba(239,68,68,.08)}
-    .sn-text{font-size:13px;color:#111b21;line-height:1.4;margin-bottom:4px;word-break:break-word}
-    .sn-date{font-size:10px;color:#8696a0}
-    .sn-empty{text-align:center;padding:40px 20px;color:#8696a0;font-size:13px}
-    .sn-empty-icon{font-size:36px;margin-bottom:8px;opacity:.5}
-    .sn-add{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid #e9edef;background:#f0f2f5;flex-shrink:0}
-    .sn-add textarea{width:100%;padding:8px 10px;border:1px solid #e9edef;border-radius:8px;font-size:13px;resize:none;outline:0;background:#fff;color:#111b21;font-family:inherit;min-height:44px}
-    .sn-add textarea:focus{border-color:#00a884}
-    .sn-add textarea::placeholder{color:#8696a0}
-    .sn-add-row{display:flex;gap:6px;justify-content:flex-end}
-    .sn-add-row button{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:0;font-family:inherit;transition:all .15s}
-    .sn-add-row .sn-cancel{background:#fff;color:#54656f;border:1px solid #e9edef}
-    .sn-add-row .sn-save{background:#008069;color:#fff}
-    .sn-add-row .sn-save:hover{background:#005c4b}
-    .sn-foot{padding:8px 12px;text-align:center;font-size:10px;color:#8696a0;border-top:1px solid #e9edef;flex-shrink:0}
-    .sn-toast{position:fixed;bottom:80px;left:20px;background:#111b21;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:100000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.15)}
-    .sn-toast.show{opacity:1;transform:translateY(0)}
-    .sn-hash-pill{display:inline-block;font-size:11px;font-weight:600;text-transform:none;padding:2px 7px;border-radius:10px;background:rgba(0,128,105,.08);color:#008069;margin:0 4px;vertical-align:middle;user-select:all;pointer-events:auto}
-    .sn-ai-btn{border:0;background:0;cursor:pointer;font-size:16px;opacity:0.7;transition:opacity .15s;padding:4px}
-    .sn-ai-btn:hover{opacity:1}
-    .sn-ai-ans{background:linear-gradient(to right, rgba(0,128,105,0.05), rgba(37,211,102,0.05));border:1px solid rgba(0,128,105,0.2);border-radius:8px;padding:12px;margin:6px;font-size:13px;line-height:1.4;color:#111b21}
-    .sn-ai-ans-label{font-size:10px;font-weight:700;color:#008069;margin-bottom:6px;display:flex;align-items:center;gap:4px;text-transform:uppercase}
-    .sn-ai-ans-label span{font-size:13px}
-  `;
-  document.head.appendChild(css);
+  // BOT SVG
+  const BOT_SVG = `<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
 
-  // ===== Build UI =====
-  var fab = document.createElement('div');
-  fab.id = 'sn-fab';
-  fab.innerHTML = '📝';
-  document.body.appendChild(fab);
+  // ===== Identity Hijacker =====
+  function hijackIdentity() {
+    // 1. Sidebar
+    const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
+    chatTitles.forEach(el => {
+      const txt = el.textContent || el.getAttribute('title') || '';
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself') {
+        el.textContent = BOT_NAME;
+        el.style.color = BOT_COLOR;
+        el.style.fontWeight = 'bold';
+        const parent = el.closest('[data-testid="cell-frame-container"]');
+        if (parent) {
+          const avatar = parent.querySelector('[data-testid="avatar-img-container"]');
+          if (avatar && !avatar.dataset.snHijacked) {
+            avatar.innerHTML = BOT_SVG;
+            avatar.dataset.snHijacked = 'true';
+          }
+        }
+      }
+    });
 
-  var panel = document.createElement('div');
-  panel.id = 'sn-panel';
-  panel.innerHTML = `
-    <div class="sn-hdr">
-      <div class="sn-hdr-title">📝 SaveNote</div>
-      <div class="sn-hdr-btns">
-        <button id="sn-add-btn" title="Add note">＋</button>
-        <button id="sn-close" title="Close">✕</button>
-      </div>
-    </div>
-    <div class="sn-search">
-      <span>🔍</span>
-      <input id="sn-q" placeholder="Search notes or ask AI..." autocomplete="off">
-      <button id="sn-ask-ai" class="sn-ai-btn" title="Ask AI about your notes">✨</button>
-    </div>
-    <div class="sn-filters" id="sn-filters"></div>
-    <div id="sn-ai-zone"></div>
-    <div class="sn-list" id="sn-list"></div>
-    <div class="sn-add" id="sn-add" style="display:none">
-      <textarea id="sn-input" placeholder="Type something to remember..." rows="2"></textarea>
-      <div class="sn-add-row">
-        <button class="sn-cancel" id="sn-cancel">Cancel</button>
-        <button class="sn-save" id="sn-do-save">Save</button>
-      </div>
-    </div>
-    <div class="sn-foot">SaveNote — your WhatsApp memory assistant</div>
-  `;
-  document.body.appendChild(panel);
-
-  var toast = document.createElement('div');
-  toast.className = 'sn-toast';
-  document.body.appendChild(toast);
-
-  // ===== State =====
-  var open = false, filter = '', query = '';
-
-  function toggle() {
-    open = !open;
-    panel.classList.toggle('open', open);
-    fab.classList.toggle('hide', open);
-    if (open) render();
-  }
-
-  function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(function(){toast.classList.remove('show');}, 2200);
-  }
-
-  function addNote(text) {
-    if (!text.trim()) return;
-    var notes = loadNotes();
-    var cat = categorize(text);
-    notes.unshift({id: Date.now(), category: cat, summary: text.length > 120 ? text.substring(0,117)+'...' : text, raw: text, date: new Date().toISOString()});
-    saveNotes(notes);
-    render();
-    showToast(EMOJIS[cat] + ' Saved under ' + cat);
-  }
-
-  function deleteNote(id) {
-    var notes = loadNotes().filter(function(n){return n.id !== id;});
-    saveNotes(notes);
-    render();
-  }
-
-  function askLocalEngine(q) {
-    if (!q.trim()) return;
-    var notes = loadNotes();
-    if (notes.length === 0) {
-      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>⚠️</span> Error</div>You have no notes for me to analyze.</div>';
-      return;
-    }
-
-    // AI Heuristics Engine
-    var words = q.toLowerCase().replace(/[^a-z0-9\\s]/g, '').split(/\\s+/);
-    var stops = ['what','where','when','who','why','is','was','my','did','do','i','a','the','in','on','at','of','for','to','and','last'];
-    var keywords = words.filter(function(w){return w.length > 2 && stops.indexOf(w) === -1;});
-    
-    var intentCat = categorize(q); 
-    var bestMatch = null;
-    var bestScore = 0;
-    
-    for (var i=0; i<notes.length; i++) {
-      var n = notes[i];
-      var score = 0;
-      var text = (n.summary + ' ' + n.raw).toLowerCase();
-      
-      keywords.forEach(function(kw) {
-        if (text.indexOf(kw) > -1) score += 10;
-      });
-      if (intentCat !== 'other' && n.category === intentCat) score += 20;
-      score += (notes.length - i) * 0.1; // Recency boost
-      
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = n;
+    // 2. Header
+    const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+    if (headerTitle) {
+      const txt = headerTitle.textContent;
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt.includes('SaveNote')) {
+        headerTitle.textContent = BOT_NAME;
+        const header = headerTitle.closest('header');
+        if (header) {
+          const avatar = header.querySelector('[data-testid="avatar-img-container"]');
+          if (avatar && !avatar.dataset.snHijacked) {
+            avatar.innerHTML = BOT_SVG;
+            avatar.dataset.snHijacked = 'true';
+          }
+        }
       }
     }
-    
-    var response = "";
-    if (bestScore < 5) {
-      response = "I couldn't find a strong match for your question in your notes. Try rephrasing or searching normally.";
-    } else {
-      var ds = new Date(bestMatch.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      response = "Based on your notes, here is the closest match from " + ds + ":<br><br>💬 <strong>" + esc(bestMatch.summary) + "</strong>";
-    }
-    
-    document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Answer</div>' + response + '</div>';
   }
 
-  function render() {
-    var notes = loadNotes();
-    var fl = filter, q = query.toLowerCase();
-    var filtered = notes.filter(function(n) {
-      if (fl && n.category !== fl) return false;
-      if (q && n.summary.toLowerCase().indexOf(q) === -1 && n.raw.toLowerCase().indexOf(q) === -1) return false;
+  // ===== Bot Reply Injection =====
+  function injectBotReply(html) {
+    const chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
+                     document.querySelector('.copyable-area [role="application"]');
+    if (!chatPane) return;
+
+    if (!document.getElementById('sn-bot-css')) {
+        const style = document.createElement('style');
+        style.id = 'sn-bot-css';
+        style.textContent = `
+            .sn-bot-reply-container { display: flex; flex-direction: column; margin-bottom: 8px; align-items: flex-start; animation: sn-fade-in 0.3s ease-out; }
+            @keyframes sn-fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+            .sn-bot-bubble { background-color: #ffffff; border-radius: 0 8px 8px 8px; padding: 8px 12px; max-width: 65%; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); position: relative; font-size: 14.2px; line-height: 19px; color: #111b21; margin-left: 8px; }
+            .sn-bot-bubble::before { content: ""; position: absolute; top: 0; left: -8px; width: 8px; height: 13px; background: radial-gradient(circle at 0 100%, transparent 8px, #ffffff 8px); }
+            .sn-bot-header { font-size: 12px; font-weight: 600; color: #008069; margin-bottom: 4px; }
+            .sn-bot-time { font-size: 11px; color: #667781; text-align: right; margin-top: 4px; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const replyContainer = document.createElement('div');
+    replyContainer.className = 'sn-bot-reply-container';
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    replyContainer.innerHTML = `
+      <div class="sn-bot-bubble">
+        <div class="sn-bot-header">${BOT_NAME}</div>
+        <div class="sn-bot-content">${html}</div>
+        <div class="sn-bot-time">${now}</div>
+      </div>
+    `;
+
+    chatPane.appendChild(replyContainer);
+    chatPane.scrollTop = chatPane.scrollHeight;
+  }
+
+  // ===== Business Logic =====
+  function handleCommand(text) {
+    const lower = text.toLowerCase();
+    const notes = loadNotes();
+    
+    if (lower.includes('what') && lower.includes('book')) {
+      const books = notes.filter(n => n.category === 'book');
+      if (books.length === 0) injectBotReply("📚 You haven't saved any books yet.");
+      else injectBotReply(`📚 <strong>Here are your books:</strong><br>${books.slice(0, 5).map(b => '• ' + b.summary).join('<br>')}`);
       return true;
-    });
-
-    // Filters
-    var cats = {};
-    notes.forEach(function(n){cats[n.category] = (cats[n.category]||0)+1;});
-    var fhtml = '<button class="'+(filter===''?'on':'')+'" data-c="">All ('+notes.length+')</button>';
-    Object.keys(cats).sort().forEach(function(c){
-      fhtml += '<button class="'+(filter===c?'on':'')+'" data-c="'+c+'">'+(EMOJIS[c]||'📌')+' '+cats[c]+'</button>';
-    });
-    document.getElementById('sn-filters').innerHTML = fhtml;
-    document.querySelectorAll('#sn-filters button').forEach(function(b){
-      b.onclick = function(){filter = b.dataset.c; render();};
-    });
-
-    // Notes
-    var list = document.getElementById('sn-list');
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="sn-empty"><div class="sn-empty-icon">'+(q?'🔍':'📝')+'</div><p>'+(q?'No notes match your search.':'No notes yet. Type something to remember!')+'</p></div>';
-      return;
     }
-    list.innerHTML = filtered.map(function(n){
-      var d = new Date(n.date);
-      var ds = d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-      var em = EMOJIS[n.category]||'📌';
-      return '<div class="sn-card" data-id="'+n.id+'"><div class="sn-card-top"><span class="sn-cat">'+em+' '+n.category+'</span><button class="sn-del" data-id="'+n.id+'">✕</button></div><div class="sn-text">'+esc(n.summary)+'</div><div class="sn-date">'+ds+'</div></div>';
-    }).join('');
-    list.querySelectorAll('.sn-del').forEach(function(b){
-      b.onclick = function(e){e.stopPropagation(); deleteNote(parseInt(b.dataset.id));};
-    });
+    if (lower.includes('where') && lower.includes('park')) {
+      const p = notes.find(n => n.category === 'parking');
+      if (!p) injectBotReply("🅿️ No parking spot found.");
+      else injectBotReply(`🅿️ <strong>Last parking spot:</strong><br>"${p.raw_message}"`);
+      return true;
+    }
+    if (lower.includes('what') && lower.includes('shopping')) {
+      const shopping = notes.filter(n => n.category === 'shopping');
+      if (shopping.length === 0) injectBotReply("🛒 Shopping list empty.");
+      else injectBotReply(`🛒 <strong>Shopping list:</strong><br>${shopping.map(s => '• ' + s.summary).join('<br>')}`);
+      return true;
+    }
+    if (lower.match(/\b(help|hi|hello)\b/)) {
+        injectBotReply("👋 I'm SaveNote AI. Message me anything to remember it.<br><br>Ask me:<br>• What books did I read?<br>• Where did I park?");
+        return true;
+    }
+    return false;
   }
 
-  // ===== Events =====
-  fab.onclick = toggle;
-  document.getElementById('sn-close').onclick = toggle;
-  document.getElementById('sn-q').oninput = function(e){
-    query = e.target.value;
-    document.getElementById('sn-ai-zone').innerHTML = ''; // clear AI answer when typing
-    render();
-  };
-  document.getElementById('sn-ask-ai').onclick = function(){
-    askLocalEngine(document.getElementById('sn-q').value);
-  };
-  document.getElementById('sn-q').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      askLocalEngine(e.target.value);
+  function processNewElements(el) {
+    const msgContainers = el.querySelectorAll ? [
+      ...el.querySelectorAll('[data-testid="msg-container"]'),
+      ...(el.matches && el.matches('[data-testid="msg-container"]') ? [el] : []),
+    ] : [];
+
+    for (const container of msgContainers) {
+      const isOutgoing = container.querySelector('[data-testid="msg-dblcheck"]') ||
+                         container.querySelector('[data-testid="msg-check"]') ||
+                         container.classList.contains('message-out');
+      if (!isOutgoing) continue;
+
+      const textEl = container.querySelector('.selectable-text span') ||
+                     container.querySelector('[data-testid="msg-text"] span');
+      if (!textEl) continue;
+
+      const text = textEl.textContent.trim();
+      if (!text || text.length < 2) continue;
+      if (lastProcessedMessages.has(text)) continue;
+      lastProcessedMessages.add(text);
+
+      const header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
+      if (header) {
+        const titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') || header.querySelector('span[title]');
+        const title = titleEl ? (titleEl.textContent || titleEl.getAttribute('title') || '') : '';
+        if (title.includes('SaveNote') || title.includes('(You)') || title.includes('You')) {
+            if (!handleCommand(text)) {
+                var category = categorize(text);
+                var notes = loadNotes();
+                notes.unshift({
+                    id: Date.now(),
+                    category: category,
+                    summary: text.length > 120 ? text.substring(0, 117) + '...' : text,
+                    raw_message: text,
+                    created_at: new Date().toISOString()
+                });
+                saveNotes(notes);
+                injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}`);
+            }
+        }
+      }
+    }
+  }
+
+  // ===== Init =====
+  setInterval(hijackIdentity, 2000);
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) processNewElements(node);
+      }
     }
   });
-  document.getElementById('sn-add-btn').onclick = function(){
-    var a = document.getElementById('sn-add');
-    a.style.display = a.style.display === 'none' ? 'flex' : 'none';
-    if (a.style.display === 'flex') document.getElementById('sn-input').focus();
-  };
-  document.getElementById('sn-cancel').onclick = function(){
-    document.getElementById('sn-add').style.display = 'none';
-    document.getElementById('sn-input').value = '';
-  };
-  document.getElementById('sn-do-save').onclick = function(){
-    var input = document.getElementById('sn-input');
-    addNote(input.value);
-    input.value = '';
-    document.getElementById('sn-add').style.display = 'none';
-  };
-  document.getElementById('sn-input').onkeydown = function(e){
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sn-do-save').click(); }
-  };
-
-  showToast('📝 SaveNote ready! Click the button to open.');
-
-  // ===== WhatsApp UI Enhancer =====
-  // Transforms "#category" into a beautiful pill inside WhatsApp chat bubbles
-  function styleTags() {
-    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-    var nodes = [];
-    var n;
-    while(n = walker.nextNode()) {
-      if (n.nodeValue && n.nodeValue.includes('#') && n.parentNode && n.parentNode.nodeName === 'SPAN' && !n.parentNode.classList.contains('sn-hash-pill')) {
-        if (n.parentNode.closest('.message-in') || n.parentNode.closest('.message-out')) {
-          nodes.push(n);
-        }
-      }
-    }
-    nodes.forEach(function(node) {
-      var text = node.nodeValue;
-      var match = text.match(/(#[a-zA-Z0-9]+)/);
-      if (match) {
-        var span = document.createElement('span');
-        var parts = text.split(match[1]);
-        if (parts[0]) span.appendChild(document.createTextNode(parts[0]));
-        var pill = document.createElement('span');
-        pill.className = 'sn-hash-pill';
-        pill.textContent = match[1].substring(1); // remove # for cleaner look
-        span.appendChild(pill);
-        if (parts[1]) span.appendChild(document.createTextNode(parts[1]));
-        if (node.parentNode) {
-          node.parentNode.replaceChild(span, node);
-        }
-      }
-    });
-  }
-
-  // Monitor DOM for new messages to style
-  new MutationObserver(function() {
-    styleTags();
-  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  const app = document.querySelector('#app');
+  if (app) observer.observe(app, { childList: true, subtree: true });
   
-  // Style existing ones on load
-  setTimeout(styleTags, 500);
+  console.log('🤖 SaveNote Native Bookmarklet Ready');
 })();

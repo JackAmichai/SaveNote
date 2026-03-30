@@ -1,4 +1,4 @@
-# SaveNote — WhatsApp AI Memory Assistant 📝
+# SaveNote — WhatsApp AI Memory Assistant 💬
 
 > Save memories through WhatsApp, retrieve them when you need them. Powered by local AI.
 

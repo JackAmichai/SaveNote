@@ -6,7 +6,7 @@ const dashboard = require('./dashboard');
 console.log(`
 ╔═══════════════════════════════════════════╗
 ║                                           ║
-║   📝  SaveNote — AI Memory Assistant  📝  ║
+║   💬  SaveNote — AI Memory Assistant  💬  ║
 ║                                           ║
 ║   Send WhatsApp messages to yourself      ║
 ║   and I'll remember everything for you.   ║

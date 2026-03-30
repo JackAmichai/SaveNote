@@ -20,7 +20,7 @@
     <div class="nav-inner">
       <a href="#" class="nav-logo" id="nav-home-link">
         <div class="nav-logo-icon">
-          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914z"/></svg>
         </div>
         <span>SaveNote</span>
       </a>
@@ -92,7 +92,7 @@
           <div class="feature-visual">
             <div class="feature-phone">
               <div class="feature-phone-header">
-                <div class="feature-phone-avatar">📝</div>
+                <div class="feature-phone-avatar">💬</div>
                 <div class="feature-phone-name">SaveNote</div>
               </div>
               <div class="feature-phone-chat">
@@ -172,7 +172,7 @@
           <div class="feature-visual">
             <div class="feature-phone">
               <div class="feature-phone-header">
-                <div class="feature-phone-avatar">📝</div>
+                <div class="feature-phone-avatar">💬</div>
                 <div class="feature-phone-name">SaveNote</div>
               </div>
               <div class="feature-phone-chat">
@@ -286,7 +286,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Back
           </a>
-          <span class="dashboard-title">📝 Your Notes</span>
+          <span class="dashboard-title">💬 Your Notes</span>
         </div>
         <div class="dashboard-header-right">
           <div class="stats">
@@ -349,11 +349,20 @@
             <button type="button" class="cat-option" data-cat="parking">🅿️ parking</button>
             <button type="button" class="cat-option" data-cat="idea">💡 idea</button>
             <button type="button" class="cat-option" data-cat="reminder">⏰ reminder</button>
+            <button type="button" class="cat-option" data-cat="shopping">🛒 shopping</button>
             <button type="button" class="cat-option" data-cat="location">📍 location</button>
             <button type="button" class="cat-option" data-cat="person">👤 person</button>
             <button type="button" class="cat-option" data-cat="recipe">🍳 recipe</button>
             <button type="button" class="cat-option" data-cat="health">🏥 health</button>
             <button type="button" class="cat-option" data-cat="finance">💰 finance</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Attachments (optional)</label>
+          <div class="attach-area">
+            <label for="note-attach" class="attach-label">📎 Click to attach photos or documents</label>
+            <input type="file" id="note-attach" multiple style="display:none;">
+            <div id="attach-preview" class="attach-preview"></div>
           </div>
         </div>
         <button type="submit" class="btn-submit" id="btn-submit">
@@ -411,7 +420,7 @@
             <h3>Drag this to your bookmarks bar</h3>
             <p>Click and drag the green button below up to your browser's bookmarks bar:</p>
             <a class="bookmarklet-btn" id="bookmarklet-link" href="#" title="Drag me to your bookmarks bar!">
-              📝 SaveNote
+              💬 SaveNote
             </a>
             <p class="install-hint">💡 Can't see the bookmarks bar? Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on Mac)</p>
           </div>
@@ -420,7 +429,7 @@
           <div class="install-step-num">2</div>
           <div class="install-step-content">
             <h3>Open WhatsApp Web & click it</h3>
-            <p>Go to WhatsApp Web, then click the "📝 SaveNote" bookmark. That's it!</p>
+            <p>Go to WhatsApp Web, then click the "💬 SaveNote" bookmark. That's it!</p>
             <a href="https://web.whatsapp.com/" target="_blank" rel="noopener" class="btn-primary small" id="open-wa-btn" style="margin-top:12px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914z"/></svg>
               Open WhatsApp Web →
@@ -436,7 +445,7 @@
     const CATEGORY_EMOJI = {
       book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
       location: '📍', person: '👤', recipe: '🍳', health: '🏥',
-      finance: '💰', other: '📌'
+      finance: '💰', shopping: '🛒', other: '📌'
     };
 
     let activeCategory = '';
@@ -583,14 +592,14 @@
       return res.ok;
     }
 
-    async function apiCreateNote(category, summary) {
+    async function apiCreateNote(category, summary, attachments = []) {
       if (isDemoMode) {
-        return window.SaveNoteDemo.addNote(category, summary);
+        return window.SaveNoteDemo.addNote(category, summary, attachments);
       }
       const res = await fetch('/api/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, summary }),
+        body: JSON.stringify({ category, summary, attachments }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save');
@@ -621,6 +630,17 @@
           .filter(([k, v]) => v && typeof v === 'string' && v.length < 60)
           .map(([k, v]) => `<span class="meta-tag"><strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}</span>`)
           .join('');
+          
+        let attsHtml = '';
+        if (note.attachments && note.attachments.length > 0) {
+          attsHtml = '<div class="note-attachments" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
+          note.attachments.forEach(a => {
+            if (a.type === 'image') attsHtml += `<img src="${a.data}" style="max-height:100px;border-radius:6px;border:1px solid #eee;">`;
+            else attsHtml += `<div class="doc" style="font-size:11px;background:#f0f2f5;padding:4px 8px;border-radius:6px;border:1px solid #e9edef;">📄 ${escapeHtml(a.name.substring(0,10))}...</div>`;
+          });
+          attsHtml += '</div>';
+        }
+
         return `
           <div class="note-card" data-id="${note.id}" style="animation-delay: ${i * 0.05}s">
             <div class="note-header">
@@ -630,6 +650,7 @@
               </button>
             </div>
             <div class="note-summary">${escapeHtml(note.summary)}</div>
+            ${attsHtml}
             ${metaTags ? `<div class="note-metadata">${metaTags}</div>` : ''}
             <div class="note-date">${date}</div>
           </div>`;
@@ -715,6 +736,8 @@
       document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
       document.querySelector('.cat-option[data-cat="other"]').classList.add('active');
       selectedCategory = 'other';
+      pendingAttachments = [];
+      document.getElementById('attach-preview').innerHTML = '';
     }
 
     document.getElementById('btn-add-note').addEventListener('click', openModal);
@@ -731,16 +754,84 @@
       });
     });
 
+    // Auto-categorize as user types in the Add Note modal
+    document.getElementById('note-summary').addEventListener('input', (e) => {
+      const text = e.target.value.trim();
+      if (!text) return;
+      // Use smartCategorize (defined later, but hoisted in modern JS — we reference it safely via setTimeout)
+      const detected = (typeof smartCategorize === 'function') ? smartCategorize(text) : 'other';
+      if (detected !== selectedCategory) {
+        selectedCategory = detected;
+        document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('active'));
+        const target = document.querySelector(`.cat-option[data-cat="${detected}"]`);
+        if (target) target.classList.add('active');
+      }
+    });
+
+    // Attachment handling for modal
+    let pendingAttachments = [];
+
+    function resizeImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement('canvas');
+            const MAX = 800;
+            let width = img.width, height = img.height;
+            if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
+            else if (height > MAX) { width *= MAX / height; height = MAX; }
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getFileAsBase64(file) {
+      return new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById('note-attach').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      const preview = document.getElementById('attach-preview');
+      preview.innerHTML = '<span style="font-size:12px;color:#8696a0">Processing...</span>';
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        if (f.type.startsWith('image/')) {
+          const b64 = await resizeImage(f);
+          pendingAttachments.push({ type: 'image', data: b64, name: f.name });
+        } else {
+          const b64 = await getFileAsBase64(f);
+          pendingAttachments.push({ type: 'doc', data: b64, name: f.name });
+        }
+      }
+      preview.innerHTML = '';
+      pendingAttachments.forEach(a => {
+        if (a.type === 'image') preview.innerHTML += `<img src="${a.data}" style="height:32px;width:32px;object-fit:cover;border-radius:4px;border:1px solid #ddd;margin-right:4px;">`;
+        else preview.innerHTML += `<div style="display:inline-flex;font-size:10px;background:#e9edef;padding:4px;border-radius:4px;color:#54656f;margin-right:4px;">📄 ${a.name.substring(0,8)}...</div>`;
+      });
+    });
+
     document.getElementById('add-note-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const summary = document.getElementById('note-summary').value.trim();
-      if (!summary) return;
+      if (!summary && pendingAttachments.length === 0) return;
+      
       const btnText = document.querySelector('.btn-submit-text');
       const btnLoading = document.querySelector('.btn-submit-loading');
       btnText.style.display = 'none';
       btnLoading.style.display = 'inline-flex';
       try {
-        await apiCreateNote(selectedCategory, summary);
+        await apiCreateNote(selectedCategory, summary, pendingAttachments);
         closeModal();
         await refresh();
       } catch (err) {
@@ -817,6 +908,231 @@
       waChat.scrollTop = waChat.scrollHeight;
     }
 
+    // ===== Smart Categorization Engine =====
+    const CATEGORY_KEYWORDS = {
+      parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
+      book: /\b(book|read|reading|author|novel|chapter|finished reading|started reading|page|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
+      idea: /\b(idea|thought|maybe|what if|concept|brainstorm|could|should try|רעיון|אולי|מה אם)\b/i,
+      reminder: /\b(remind|remember|don'?t forget|todo|task|call|schedule|appointment|meeting|תזכורת|לזכור|פגישה)\b/i,
+      shopping: /\b(shop|shopping|buy|groceries|grocery|supermarket|market|shoes|clothes|list|קניות|סופר|לקנות)\b/i,
+      location: /\b(location|place|address|street|road|restaurant|cafe|bar|store|found a|מקום|כתובת|מסעדה|רחוב)\b/i,
+      person: /\b(met |person|name is|works at|works on|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
+      recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|fry|boil|מתכון|בישול|אוכל)\b/i,
+      health: /\b(health|doctor|medicine|medication|symptom|diagnosis|hospital|clinic|vitamin|רופא|בריאות|תרופה)\b/i,
+      finance: /\b(money|pay|paid|cost|price|expense|salary|bank|finance|budget|\$|₪|€|£|כסף|שילמתי|עלות|הוצאה)\b/i,
+    };
+
+    function smartCategorize(text) {
+      for (const [category, regex] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (regex.test(text)) return category;
+      }
+      return 'other';
+    }
+
+    function extractSmartMetadata(text, category) {
+      const meta = {};
+      switch (category) {
+        case 'parking': {
+          const level = text.match(/level\s*(\d+)/i) || text.match(/floor\s*(\d+)/i) || text.match(/קומה\s*(\d+)/i);
+          const section = text.match(/section\s*([A-Za-z0-9]+)/i);
+          const loc = text.match(/(?:at|in|ב)\s+(?:the\s+)?(.{3,30}?)(?:\.|$|,)/i);
+          if (level) meta.level = level[1];
+          if (section) meta.section = section[1];
+          if (loc) meta.location = loc[1].trim();
+          break;
+        }
+        case 'book': {
+          const byMatch = text.match(/by\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/);
+          const titleQuote = text.match(/[""](.+?)[""]/) || text.match(/(?:book|reading|read|finished|started)\s+(.{3,40}?)(?:\s+by\b|$|,|\.|!)/i);
+          if (byMatch) meta.author = byMatch[1];
+          if (titleQuote) meta.title = titleQuote[1].trim();
+          if (/finish|finished|סיימתי|גמרתי/i.test(text)) meta.status = 'finished';
+          else if (/start|started|התחלתי/i.test(text)) meta.status = 'started';
+          else if (/to.read|want to|רוצה/i.test(text)) meta.status = 'to-read';
+          else if (/recommend|המלצה/i.test(text)) meta.status = 'recommended';
+          break;
+        }
+        case 'finance': {
+          const amount = text.match(/[\$₪€£]\s*[\d,]+(?:\.\d{2})?/) || text.match(/(\d[\d,]+)\s*(?:NIS|USD|EUR|שקל)/i);
+          if (amount) meta.amount = amount[0];
+          break;
+        }
+        case 'person': {
+          const nameMatch = text.match(/(?:met|name is|פגשתי)\s+([A-Z][a-z]+)/i);
+          const company = text.match(/(?:from|at|works at|עובד ב)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+          if (nameMatch) meta.name = nameMatch[1];
+          if (company) meta.company = company[1];
+          break;
+        }
+        case 'reminder': {
+          const when = text.match(/\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|מחר|היום)\b/i);
+          if (when) meta.when = when[1];
+          break;
+        }
+        case 'location': {
+          const place = text.match(/(?:called|named|at|in|ב)\s+([A-Z][a-zA-Z\s]{2,25})/);
+          if (place) meta.name = place[1].trim();
+          break;
+        }
+      }
+      return meta;
+    }
+
+    // ===== Smart Query Detection =====
+    function isQueryMessage(msg) {
+      const lower = msg.toLowerCase();
+      // English query patterns
+      if (/^(where|what|which|how|when|who|find|show|list|tell|do i have|have i)\b/i.test(msg)) return true;
+      // Hebrew query patterns
+      if (/^(איפה|מה|מתי|אילו|תמצא|תראה|מי|האם|יש לי)/i.test(msg)) return true;
+      // Question mark
+      if (msg.endsWith('?')) return true;
+      return false;
+    }
+
+    function detectQueryCategory(msg) {
+      const lower = msg.toLowerCase();
+      if (/\b(park|car|parked|חנית|חניתי|חניה|רכב|איפה חניתי)\b/i.test(msg)) return 'parking';
+      if (/\b(book|read|reading|ספר|ספרים|קראתי)\b/i.test(msg)) return 'book';
+      if (/\b(idea|thought|רעיון)\b/i.test(msg)) return 'idea';
+      if (/\b(remind|todo|task|תזכורת)\b/i.test(msg)) return 'reminder';
+      if (/\b(shop|shopping|buy|groceries|supermarket|קניות|לקנות|סופר)\b/i.test(msg)) return 'shopping';
+      if (/\b(place|location|where is|מקום|כתובת)\b/i.test(msg)) return 'location';
+      if (/\b(person|who|met|פגשתי|מי)\b/i.test(msg)) return 'person';
+      if (/\b(recipe|cook|food|מתכון|אוכל)\b/i.test(msg)) return 'recipe';
+      if (/\b(health|doctor|medication|בריאות|רופא)\b/i.test(msg)) return 'health';
+      if (/\b(money|paid|cost|expense|finance|כסף|הוצאה)\b/i.test(msg)) return 'finance';
+      return null;
+    }
+
+    // ===== Beautiful AI-style Response Formatter =====
+    function formatQueryResponse(notes, queryCat, originalMsg) {
+      if (!notes || notes.length === 0) {
+        return `🔍 I couldn't find anything matching your query. Try saving some information first!`;
+      }
+
+      const emoji = CATEGORY_EMOJI[queryCat] || '🔍';
+
+      // Special formatted responses by category
+      if (queryCat === 'parking' && notes.length > 0) {
+        const n = notes[0];
+        const meta = n.metadata || {};
+        const saved = getTimeAgo(n.created_at);
+        let detail = `🔍 Here's what I found:<br><br>🅿️ ${escapeHtml(n.summary)}`;
+        if (saved) detail += `<br><em>${saved}</em>`;
+        return detail;
+      }
+
+      if (queryCat === 'book') {
+        let response = `📚 Your reading list:<br><br>`;
+        notes.forEach((n, i) => {
+          const meta = n.metadata || {};
+          const title = meta.title || n.summary;
+          const author = meta.author ? ` — ${meta.author}` : '';
+          const status = meta.status || '';
+          let statusIcon = '';
+          if (status === 'finished') statusIcon = ' ✅';
+          else if (status === 'started' || status === 'reading') statusIcon = ' (reading)';
+          else if (status === 'to-read') statusIcon = ' (to-read)';
+          else if (status === 'recommended') statusIcon = ' ⭐';
+          response += `${i + 1}. ${escapeHtml(title)}${author}${statusIcon}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'idea') {
+        let response = `💡 Your ideas:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `${i + 1}. ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'reminder') {
+        let response = `⏰ Your reminders:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `• ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'person') {
+        let response = `👤 People you've noted:<br><br>`;
+        notes.forEach((n, i) => {
+          const meta = n.metadata || {};
+          response += `${i + 1}. ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'recipe') {
+        let response = `🍳 Your saved recipes:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `${i + 1}. ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'finance') {
+        let response = `💰 Financial notes:<br><br>`;
+        notes.forEach((n, i) => {
+          const meta = n.metadata || {};
+          const amount = meta.amount ? ` (${meta.amount})` : '';
+          response += `• ${escapeHtml(n.summary)}${amount}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'health') {
+        let response = `🏥 Health notes:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `• ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'location') {
+        let response = `📍 Saved locations:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `${i + 1}. ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      if (queryCat === 'shopping') {
+        let response = `🛒 Your shopping notes:<br><br>`;
+        notes.forEach((n, i) => {
+          response += `• ${escapeHtml(n.summary)}<br>`;
+        });
+        return response;
+      }
+
+      // Generic fallback — still beautiful
+      let response = `🔍 Here's what I found:<br><br>`;
+      notes.slice(0, 5).forEach((n, i) => {
+        const em = CATEGORY_EMOJI[n.category] || '📌';
+        response += `${em} ${escapeHtml(n.summary)}<br>`;
+      });
+      return response;
+    }
+
+    function getTimeAgo(dateStr) {
+      try {
+        const d = new Date(dateStr + (dateStr.includes('Z') ? '' : 'Z'));
+        const diff = Date.now() - d.getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Saved just now';
+        if (mins < 60) return `Saved ${mins} minute${mins > 1 ? 's' : ''} ago`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `Saved ${hours} hour${hours > 1 ? 's' : ''} ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `Saved ${days} day${days > 1 ? 's' : ''} ago`;
+        return `Saved on ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      } catch {
+        return '';
+      }
+    }
+
     waForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = waInput.value.trim();
@@ -825,28 +1141,75 @@
       waInput.value = '';
 
       setTimeout(async () => {
-        const lowerMsg = message.toLowerCase();
-        const isQuery = lowerMsg.startsWith('where') || lowerMsg.startsWith('what') || lowerMsg.startsWith('find');
-
-        if (isQuery) {
-          let queryTerm = message.replace(/^(where did i park|where is my|what is|find) /i, '').trim();
-          if (!queryTerm) queryTerm = message;
-          document.getElementById('search-input').value = queryTerm;
-          if (currentView === 'dashboard') await refresh();
-
-          const notes = await fetchNotes(activeCategory, queryTerm);
-          if (notes.length > 0) {
-            const resultHTML = `<br><br><strong>Found ${notes.length} result(s):</strong><br>` +
-              notes.slice(0, 3).map(n => `📌 <em>${escapeHtml(n.summary)}</em>`).join('<br>');
-            addWaMessage(`Here's what I found:`, 'received', resultHTML);
+        if (isQueryMessage(message)) {
+          // ---- QUERY MODE ----
+          const queryCat = detectQueryCategory(message);
+          
+          // Build search terms — strip common query words
+          let searchTerms = message
+            .replace(/^(where did i|where do i|where is my|where's my|what|which|show me|find|list|tell me|do i have|have i|איפה|מה|מתי|תמצא|תראה)\s*/i, '')
+            .replace(/\?/g, '')
+            .trim();
+          
+          // If we detected a category, search within it
+          let notes;
+          if (queryCat) {
+            notes = await fetchNotes(queryCat, '');
+            // If no results in category, try broader search
+            if (!notes || notes.length === 0) {
+              notes = await fetchNotes('', searchTerms);
+            }
           } else {
-            addWaMessage(`I couldn't find anything matching your query. Try saving some information first!`, 'received');
+            notes = await fetchNotes('', searchTerms);
           }
-        } else {
-          try {
-            await apiCreateNote('other', message);
+
+          // Update dashboard search if open
+          if (notes && notes.length > 0) {
+            document.getElementById('search-input').value = searchTerms || (queryCat || '');
             if (currentView === 'dashboard') await refresh();
-            addWaMessage(`Got it! Saved as a new note: "${escapeHtml(message).substring(0, 30)}..."`, 'received');
+          }
+
+          const response = formatQueryResponse(notes, queryCat, message);
+          addWaMessage('', 'received', response);
+          
+        } else {
+          // ---- SAVE MODE ----
+          const category = smartCategorize(message);
+          const metadata = extractSmartMetadata(message, category);
+          const emoji = CATEGORY_EMOJI[category] || '📌';
+          
+          // Create a clean summary
+          let summary = message;
+          if (summary.length > 120) summary = summary.substring(0, 117) + '...';
+          
+          try {
+            if (isDemoMode) {
+              // In demo mode, add note with full metadata
+              const note = {
+                id: Date.now(),
+                category: category,
+                summary: summary,
+                raw_message: message,
+                metadata: metadata,
+                created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+              };
+              window.SaveNoteDemo.notes.unshift(note);
+            } else {
+              await apiCreateNote(category, summary);
+            }
+            if (currentView === 'dashboard') await refresh();
+            
+            // Beautiful confirmation like in the landing page mockups
+            const metaStr = Object.entries(metadata)
+              .filter(([k, v]) => v && typeof v === 'string')
+              .map(([k, v]) => `<em>${k}: ${escapeHtml(v)}</em>`)
+              .join('<br>');
+            
+            let confirmHTML = `${emoji} Got it! Saved under <strong>${category}</strong>:<br><em>"${escapeHtml(summary)}"</em>`;
+            if (metaStr) confirmHTML += `<br>${metaStr}`;
+            confirmHTML += `<span class="category-pill" style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:rgba(0,128,105,0.1);color:#008069;margin-left:4px">${category}</span>`;
+            
+            addWaMessage('', 'received', confirmHTML);
           } catch (err) {
             addWaMessage(`Oops, I couldn't save that: ${err.message}`, 'received');
           }

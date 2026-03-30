@@ -13,6 +13,7 @@ const SYSTEM_PROMPT = `You are SaveNote, a personal memory assistant. Your job i
    - recipe (recipes, cooking tips, food-related)
    - health (health info, medications, appointments)
    - finance (expenses, payments, financial info)
+   - shopping (shopping lists, groceries, items to buy)
    - other (anything that doesn't fit the above)
 3. **Summary**: A concise, clear summary of the information.
 4. **Metadata**: Extract structured key-value fields relevant to the category.

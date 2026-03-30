@@ -1,6 +1,6 @@
 /**
  * SaveNote — WhatsApp Web Content Script
- * Injects the SaveNote sidebar into WhatsApp Web and monitors messages
+ * Native Bot Mode: Hijacks the "Self-Chat" to act as the AI bot.
  */
 
 (function () {
@@ -10,59 +10,29 @@
   const CATEGORY_EMOJI = {
     book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
     location: '📍', person: '👤', recipe: '🍳', health: '🏥',
-    finance: '💰', other: '📌',
+    finance: '💰', shopping: '🛒', other: '📌',
   };
 
   const CATEGORY_KEYWORDS = {
-    parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot)\b/i,
-    book: /\b(book|read|reading|author|novel|chapter|finished reading|started reading|page)\b/i,
-    idea: /\b(idea|thought|maybe|what if|concept|brainstorm|could|should try)\b/i,
-    reminder: /\b(remind|remember|don'?t forget|todo|task|buy|call|schedule|appointment|meeting)\b/i,
-    location: /\b(location|place|address|street|road|restaurant|cafe|bar|shop|store|found a)\b/i,
-    person: /\b(met |person|name is|works at|works on|contact|friend|colleague)\b/i,
-    recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|fry|boil)\b/i,
-    health: /\b(health|doctor|medicine|medication|symptom|diagnosis|hospital|clinic|vitamin)\b/i,
-    finance: /\b(money|pay|paid|cost|price|expense|salary|bank|finance|budget|\$|₪|€|£)\b/i,
+    parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
+    book: /\b(book|read|reading|author|novel|chapter|finished reading|started reading|page|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
+    idea: /\b(idea|thought|maybe|what if|concept|brainstorm|could|should try|רעיון|אולי|מה אם)\b/i,
+    reminder: /\b(remind|remember|don'?t forget|todo|task|call|schedule|appointment|meeting|תזכורת|לזכור|פגישה)\b/i,
+    shopping: /\b(shop|shopping|buy|groceries|grocery|supermarket|market|shoes|clothes|list|קניות|סופר|לקנות)\b/i,
+    location: /\b(location|place|address|street|road|restaurant|cafe|bar|store|found a|מקום|כתובת|מסעדה|רחוב)\b/i,
+    person: /\b(met |person|name is|works at|works on|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
+    recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|fry|boil|מתכון|בישול|אוכל)\b/i,
+    health: /\b(health|doctor|medicine|medication|symptom|diagnosis|hospital|clinic|vitamin|רופא|בריאות|תרופה)\b/i,
+    finance: /\b(money|pay|paid|cost|price|expense|salary|bank|finance|budget|\$|₪|€|£|כסף|שילמתי|עלות|הוצאה)\b/i,
   };
 
-  let panelOpen = false;
   let notes = [];
-  let activeFilter = '';
-  let searchQuery = '';
   let lastProcessedMessages = new Set();
+  const BOT_NAME = 'SaveNote AI 💬';
+  const BOT_COLOR = '#008069';
 
-  // ===== Categorization =====
-  function categorize(text) {
-    for (const [category, regex] of Object.entries(CATEGORY_KEYWORDS)) {
-      if (regex.test(text)) return category;
-    }
-    return 'other';
-  }
-
-  function extractMetadata(text, category) {
-    const meta = {};
-    switch (category) {
-      case 'parking':
-        const level = text.match(/level\s*(\d+)/i) || text.match(/floor\s*(\d+)/i);
-        const section = text.match(/section\s*([A-Za-z0-9]+)/i);
-        if (level) meta.level = level[1];
-        if (section) meta.section = section[1];
-        break;
-      case 'book':
-        const byMatch = text.match(/by\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/);
-        if (byMatch) meta.author = byMatch[1];
-        break;
-      case 'finance':
-        const amount = text.match(/[\$₪€£]\s*[\d,]+(?:\.\d{2})?/) || text.match(/(\d[\d,]+)\s*(?:NIS|USD|EUR)/i);
-        if (amount) meta.amount = amount[0];
-        break;
-      case 'person':
-        const nameMatch = text.match(/(?:met|name is)\s+([A-Z][a-z]+)/);
-        if (nameMatch) meta.name = nameMatch[1];
-        break;
-    }
-    return meta;
-  }
+  // SVG for bot avatar
+  const BOT_SVG = `<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
 
   // ===== Storage =====
   async function loadNotes() {
@@ -75,291 +45,152 @@
   }
 
   async function saveNote(text) {
+    if (!text.trim()) return;
     const category = categorize(text);
-    const metadata = extractMetadata(text, category);
-
+    
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({
         type: 'SAVE_NOTE',
         category,
         summary: text.length > 120 ? text.substring(0, 117) + '...' : text,
         raw_message: text,
-        metadata,
+        metadata: {},
+        attachments: [],
       }, (response) => {
         if (response && response.success) {
           notes.unshift(response.note);
-          renderNotes();
-          showToast(`${CATEGORY_EMOJI[category]} Saved under ${category}`);
+          injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}<br><small>"${text}"</small>`);
           resolve(response.note);
         }
       });
     });
   }
 
-  async function deleteNote(id) {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: 'DELETE_NOTE', id }, () => {
-        notes = notes.filter((n) => n.id !== id);
-        renderNotes();
-        resolve();
-      });
-    });
-  }
-
-  // ===== Toast Notification =====
-  function showToast(message) {
-    let toast = document.getElementById('sn-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'sn-toast';
-      document.body.appendChild(toast);
+  // ===== Categorization =====
+  function categorize(text) {
+    for (const [category, regex] of Object.entries(CATEGORY_KEYWORDS)) {
+      if (regex.test(text)) return category;
     }
-    toast.textContent = message;
-    toast.classList.add('sn-toast-show');
-    setTimeout(() => toast.classList.remove('sn-toast-show'), 2500);
+    return 'other';
   }
 
-  // ===== UI: Floating Button =====
-  function createFloatingButton() {
-    if (document.getElementById('sn-fab')) return;
-
-    const fab = document.createElement('div');
-    fab.id = 'sn-fab';
-    fab.title = 'SaveNote';
-    fab.innerHTML = `
-      <svg viewBox="0 0 24 24" width="26" height="26" fill="white">
-        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-        <path d="M7 9h10v2H7zm0-3h10v2H7zm0 6h7v2H7z"/>
-      </svg>
-      <div id="sn-fab-badge" class="sn-fab-badge" style="display:none;">0</div>
-    `;
-    fab.addEventListener('click', togglePanel);
-    document.body.appendChild(fab);
-  }
-
-  // ===== UI: Side Panel =====
-  function createPanel() {
-    if (document.getElementById('sn-panel')) return;
-
-    const panel = document.createElement('div');
-    panel.id = 'sn-panel';
-    panel.innerHTML = `
-      <div class="sn-panel-header">
-        <div class="sn-panel-title">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="#008069">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-          </svg>
-          <span>SaveNote</span>
-        </div>
-        <div class="sn-panel-actions">
-          <button id="sn-add-btn" class="sn-icon-btn" title="Add note">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          </button>
-          <button id="sn-close-btn" class="sn-icon-btn" title="Close">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="sn-search-bar">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="#8696A0"><circle cx="11" cy="11" r="8" fill="none" stroke="#8696A0" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#8696A0" stroke-width="2"/></svg>
-        <input type="text" id="sn-search" placeholder="Search notes..." autocomplete="off">
-      </div>
-
-      <div class="sn-filters" id="sn-filters">
-        <button class="sn-filter-btn active" data-cat="">All</button>
-      </div>
-
-      <div class="sn-notes-list" id="sn-notes-list">
-        <div class="sn-empty">
-          <div class="sn-empty-icon">📝</div>
-          <p>No notes yet.<br>Send messages to yourself to save them!</p>
-        </div>
-      </div>
-
-      <div class="sn-add-panel" id="sn-add-panel" style="display:none;">
-        <textarea id="sn-note-input" placeholder="Type something to remember..." rows="3"></textarea>
-        <div class="sn-add-actions">
-          <button id="sn-cancel-add" class="sn-btn sn-btn-cancel">Cancel</button>
-          <button id="sn-save-add" class="sn-btn sn-btn-save">Save Note</button>
-        </div>
-      </div>
-
-      <div class="sn-panel-footer">
-        <span>Messages you send to yourself are auto-saved</span>
-      </div>
-    `;
-
-    document.body.appendChild(panel);
-
-    // Wire up events
-    document.getElementById('sn-close-btn').addEventListener('click', togglePanel);
-    document.getElementById('sn-add-btn').addEventListener('click', () => {
-      const addPanel = document.getElementById('sn-add-panel');
-      addPanel.style.display = addPanel.style.display === 'none' ? 'flex' : 'none';
-      if (addPanel.style.display === 'flex') {
-        document.getElementById('sn-note-input').focus();
+  // ===== UI: Bot Identity Hijacker =====
+  function hijackIdentity() {
+    // 1. Rename 'You' in sidebar
+    const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
+    chatTitles.forEach(el => {
+      const txt = el.textContent || el.getAttribute('title') || '';
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself') {
+        el.textContent = BOT_NAME;
+        el.style.color = BOT_COLOR;
+        el.style.fontWeight = 'bold';
+        
+        // Try to replace avatar
+        const parent = el.closest('[data-testid="cell-frame-container"]');
+        if (parent) {
+          const avatar = parent.querySelector('[data-testid="avatar-img-container"]');
+          if (avatar && !avatar.dataset.snHijacked) {
+            avatar.innerHTML = BOT_SVG;
+            avatar.dataset.snHijacked = 'true';
+          }
+        }
       }
     });
 
-    document.getElementById('sn-cancel-add').addEventListener('click', () => {
-      document.getElementById('sn-add-panel').style.display = 'none';
-      document.getElementById('sn-note-input').value = '';
-    });
-
-    document.getElementById('sn-save-add').addEventListener('click', async () => {
-      const input = document.getElementById('sn-note-input');
-      const text = input.value.trim();
-      if (!text) return;
-      await saveNote(text);
-      input.value = '';
-      document.getElementById('sn-add-panel').style.display = 'none';
-    });
-
-    document.getElementById('sn-search').addEventListener('input', (e) => {
-      searchQuery = e.target.value.trim().toLowerCase();
-      renderNotes();
-    });
-
-    // Handle Enter key in textarea
-    document.getElementById('sn-note-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        document.getElementById('sn-save-add').click();
+    // 2. Rename in active conversation header
+    const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+    if (headerTitle) {
+      const txt = headerTitle.textContent;
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt.includes('SaveNote')) {
+        headerTitle.textContent = BOT_NAME;
+        
+        const header = headerTitle.closest('header');
+        if (header) {
+          const avatar = header.querySelector('[data-testid="avatar-img-container"]');
+          if (avatar && !avatar.dataset.snHijacked) {
+            avatar.innerHTML = BOT_SVG;
+            avatar.dataset.snHijacked = 'true';
+          }
+        }
       }
-    });
-  }
-
-  function togglePanel() {
-    panelOpen = !panelOpen;
-    const panel = document.getElementById('sn-panel');
-    const fab = document.getElementById('sn-fab');
-
-    if (panelOpen) {
-      panel.classList.add('sn-panel-open');
-      fab.classList.add('sn-fab-hidden');
-      loadNotes().then(() => renderNotes());
-    } else {
-      panel.classList.remove('sn-panel-open');
-      fab.classList.remove('sn-fab-hidden');
     }
   }
 
-  // ===== Rendering =====
-  function renderNotes() {
-    const list = document.getElementById('sn-notes-list');
-    if (!list) return;
+  // ===== UI: Bot Reply Injector =====
+  function injectBotReply(html) {
+    const chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
+                     document.querySelector('.copyable-area [role="application"]');
+    if (!chatPane) return;
 
-    // Filter
-    let filtered = [...notes];
-    if (activeFilter) {
-      filtered = filtered.filter((n) => n.category === activeFilter);
-    }
-    if (searchQuery) {
-      filtered = filtered.filter((n) =>
-        n.summary.toLowerCase().includes(searchQuery) ||
-        (n.raw_message && n.raw_message.toLowerCase().includes(searchQuery)) ||
-        n.category.toLowerCase().includes(searchQuery)
-      );
-    }
+    const replyContainer = document.createElement('div');
+    replyContainer.className = 'sn-bot-reply-container';
+    
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    replyContainer.innerHTML = `
+      <div class="sn-bot-bubble">
+        <div class="sn-bot-header">${BOT_NAME}</div>
+        <div class="sn-bot-content">${html}</div>
+        <div class="sn-bot-time">${now}</div>
+      </div>
+    `;
 
-    // Render filters
-    renderFilters();
-
-    if (filtered.length === 0) {
-      list.innerHTML = `
-        <div class="sn-empty">
-          <div class="sn-empty-icon">${searchQuery ? '🔍' : '📝'}</div>
-          <p>${searchQuery ? 'No notes match your search.' : 'No notes yet.<br>Send messages to yourself to save them!'}</p>
-        </div>
-      `;
-      return;
-    }
-
-    list.innerHTML = filtered
-      .map((note) => {
-        const emoji = CATEGORY_EMOJI[note.category] || '📌';
-        const date = new Date(note.created_at).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-        });
-        const meta = note.metadata || {};
-        const metaStr = Object.entries(meta)
-          .filter(([, v]) => v && typeof v === 'string' && v.length < 50)
-          .map(([k, v]) => `<span class="sn-meta-tag"><b>${k}:</b> ${v}</span>`)
-          .join('');
-
-        return `
-          <div class="sn-note-card" data-id="${note.id}">
-            <div class="sn-note-top">
-              <span class="sn-note-cat sn-cat-${note.category}">${emoji} ${note.category}</span>
-              <button class="sn-note-del" data-id="${note.id}" title="Delete">✕</button>
-            </div>
-            <div class="sn-note-text">${escapeHtml(note.summary)}</div>
-            ${metaStr ? `<div class="sn-note-meta">${metaStr}</div>` : ''}
-            <div class="sn-note-date">${date}</div>
-          </div>
-        `;
-      })
-      .join('');
-
-    // Delete buttons
-    list.querySelectorAll('.sn-note-del').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = parseInt(btn.dataset.id);
-        deleteNote(id);
-      });
-    });
+    chatPane.appendChild(replyContainer);
+    
+    // Scroll to bottom
+    chatPane.scrollTop = chatPane.scrollHeight;
   }
 
-  function renderFilters() {
-    const container = document.getElementById('sn-filters');
-    if (!container) return;
+  // ===== Command Handler =====
+  function handleCommand(text) {
+    const lower = text.toLowerCase();
+    
+    if (lower.includes('what') && lower.includes('book')) {
+      const books = notes.filter(n => n.category === 'book');
+      if (books.length === 0) {
+        injectBotReply("📚 You haven't saved any books yet! Just send me a book title to start your list.");
+      } else {
+        const list = books.slice(0, 5).map(b => `• ${b.summary}`).join('<br>');
+        injectBotReply(`📚 <strong>Here are the last few books you read:</strong><br>${list}`);
+      }
+      return true;
+    }
+    
+    if (lower.includes('where') && lower.includes('park')) {
+      const parking = notes.find(n => n.category === 'parking');
+      if (!parking) {
+        injectBotReply("🅿️ I don't have any recent parking notes. Don't forget to tell me where you park next time!");
+      } else {
+        injectBotReply(`🅿️ <strong>Last parking spot found:</strong><br>"${parking.raw_message}"<br><small>Saved ${new Date(parking.created_at).toLocaleTimeString()}</small>`);
+      }
+      return true;
+    }
 
-    const categories = [...new Set(notes.map((n) => n.category))].sort();
-    const allBtn = `<button class="sn-filter-btn${activeFilter === '' ? ' active' : ''}" data-cat="">All (${notes.length})</button>`;
-    const catBtns = categories
-      .map((cat) => {
-        const count = notes.filter((n) => n.category === cat).length;
-        const emoji = CATEGORY_EMOJI[cat] || '📌';
-        return `<button class="sn-filter-btn${activeFilter === cat ? ' active' : ''}" data-cat="${cat}">${emoji} ${count}</button>`;
-      })
-      .join('');
+    if (lower.includes('what') && lower.includes('shopping')) {
+        const shopping = notes.filter(n => n.category === 'shopping');
+        if (shopping.length === 0) {
+          injectBotReply("🛒 Your shopping list is empty.");
+        } else {
+          const list = shopping.map(s => `• ${s.summary}`).join('<br>');
+          injectBotReply(`🛒 <strong>Your shopping list:</strong><br>${list}`);
+        }
+        return true;
+      }
 
-    container.innerHTML = allBtn + catBtns;
+    if (lower.includes('help') || lower.includes('hello') || lower.includes('hi ')) {
+      injectBotReply(`👋 <strong>Hi! I'm SaveNote AI.</strong><br>I'm your personal memory assistant. Just message me anything you want to remember, and I'll categorize it for you!<br><br>Try asking:<br>• "What books did I read?"<br>• "Where did I park?"<br>• "What's on my shopping list?"`);
+      return true;
+    }
 
-    container.querySelectorAll('.sn-filter-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        activeFilter = btn.dataset.cat;
-        container.querySelectorAll('.sn-filter-btn').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderNotes();
-      });
-    });
-  }
-
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
+    return false;
   }
 
   // ===== WhatsApp Web Message Observer =====
-  function startMessageObserver() {
-    // Wait for WhatsApp to fully load
-    const checkReady = setInterval(() => {
-      const appEl = document.querySelector('#app');
-      const mainPanel = document.querySelector('[data-testid="conversation-panel-wrapper"]') ||
-                        document.querySelector('#main');
-      if (appEl && mainPanel) {
-        clearInterval(checkReady);
-        observeMessages();
-      }
-    }, 2000);
-  }
+  function startObservers() {
+    // 1. Identity Hijacker Interval
+    setInterval(hijackIdentity, 2000);
 
-  function observeMessages() {
-    // Observe the entire app for DOM changes
+    // 2. Message Mutation Observer
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
@@ -376,92 +207,62 @@
   }
 
   function processNewElements(el) {
-    // Look for outgoing message bubbles
-    const msgContainers = el.querySelectorAll
-      ? [
-          ...el.querySelectorAll('[data-testid="msg-container"]'),
-          ...(el.matches && el.matches('[data-testid="msg-container"]') ? [el] : []),
-        ]
-      : [];
+    const msgContainers = el.querySelectorAll ? [
+      ...el.querySelectorAll('[data-testid="msg-container"]'),
+      ...(el.matches && el.matches('[data-testid="msg-container"]') ? [el] : []),
+    ] : [];
 
     for (const container of msgContainers) {
-      // Check if this is an outgoing (sent) message
       const isOutgoing = container.querySelector('[data-testid="msg-dblcheck"]') ||
                          container.querySelector('[data-testid="msg-check"]') ||
                          container.classList.contains('message-out');
 
       if (!isOutgoing) continue;
 
-      // Get message text
       const textEl = container.querySelector('.selectable-text span') ||
                      container.querySelector('[data-testid="msg-text"] span');
       if (!textEl) continue;
 
       const text = textEl.textContent.trim();
-      if (!text || text.length < 3) continue;
+      if (!text || text.length < 2) continue;
 
-      // Deduplicate
-      const msgKey = `${text}-${Date.now() >> 12}`; // group by ~4s window
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
 
-      // Limit cache size
-      if (lastProcessedMessages.size > 200) {
-        const arr = [...lastProcessedMessages];
-        lastProcessedMessages = new Set(arr.slice(-100));
-      }
-
-      // Check if we're in a self-chat by checking the header
       checkSelfChat().then((isSelf) => {
         if (isSelf) {
-          saveNote(text);
-          updateBadge();
+          if (!handleCommand(text)) {
+            saveNote(text);
+          }
         }
       });
     }
   }
 
   async function checkSelfChat() {
-    // Try to detect if current chat is a self-chat
-    // WhatsApp Web shows "You" or the user's own name in self-chats
-    const header = document.querySelector('[data-testid="conversation-header"]') ||
-                   document.querySelector('header');
+    const header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
     if (!header) return false;
 
-    // Self-chat often has "(You)" or the user's own name
     const titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
                     header.querySelector('span[title]');
     if (!titleEl) return false;
 
     const title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    // Check common self-chat indicators
-    return title.includes('(You)') || title.includes('You') || title === 'Chat with yourself';
-  }
-
-  function updateBadge() {
-    const badge = document.getElementById('sn-fab-badge');
-    if (badge && !panelOpen) {
-      const count = parseInt(badge.textContent || '0') + 1;
-      badge.textContent = count;
-      badge.style.display = 'flex';
-    }
+    return title.includes('SaveNote') || title.includes('(You)') || title.includes('You');
   }
 
   // ===== Initialize =====
   function init() {
-    console.log('📝 SaveNote extension loaded on WhatsApp Web');
-    createFloatingButton();
-    createPanel();
+    console.log('🤖 SaveNote Native Bot Mode activated');
     loadNotes().then(() => {
-      renderNotes();
-      startMessageObserver();
+      startObservers();
     });
   }
 
   // Wait for DOM
   if (document.readyState === 'complete') {
-    setTimeout(init, 1500);
+    setTimeout(init, 2000);
   } else {
-    window.addEventListener('load', () => setTimeout(init, 1500));
+    window.addEventListener('load', () => setTimeout(init, 2000));
   }
 })();
