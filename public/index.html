@@ -111,7 +111,7 @@
         <div class="feature-inner fade-in">
           <div class="feature-text">
             <h2>AI-powered<span class="break">organization</span></h2>
-            <p>Your notes are automatically sorted into smart categories by a local AI model. No cloud required — everything stays private on your device.</p>
+            <p>Your notes will be automatically sorted into categories. This MVP demonstrates the browser-based workflow, proving that true privacy and zero-cloud architecture is possible.</p>
             <a href="#how-it-works" class="feature-link">
               Learn more
               <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
@@ -138,7 +138,7 @@
         <div class="feature-inner fade-in">
           <div class="feature-text">
             <h2>Your data<span class="break">stays yours</span></h2>
-            <p>SaveNote runs entirely on your machine with Ollama. No cloud AI, no data collection, no tracking. Your memories are truly private.</p>
+            <p>SaveNote is designed to run entirely on your machine. The final architecture relies heavily on Local LLMs (like Ollama) to guarantee no data collection, no tracking, and true privacy.</p>
             <a href="https://github.com/JackAmichai/SaveNote" class="feature-link" target="_blank" rel="noopener">
               Learn more
               <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
@@ -231,6 +231,26 @@
       </div>
     </section>
 
+    <!-- Future Vision -->
+    <section class="future-vision" id="vision" style="background:var(--bg-secondary); padding:4rem 5%; border-top:1px solid var(--border-color); text-align:center;">
+      <div style="max-width:800px; margin:0 auto;">
+        <h2 style="font-size:2rem; margin-bottom:1rem; color:var(--text-primary);">The Future of SaveNote</h2>
+        <p style="font-size:1.1rem; color:var(--text-secondary); line-height:1.6; margin-bottom:2rem;">
+          This early browser MVP showcases the ideal native user experience. Our roadmap involves upgrading to a full, robust backend architecture:
+        </p>
+        <div style="display:flex; gap:2rem; justify-content:center; text-align:left; flex-wrap:wrap;">
+           <div style="flex:1; min-width:300px; background:var(--bg-primary); padding:2rem; border-radius:12px; box-shadow:var(--shadow-md);">
+             <h3 style="color:var(--brand-primary); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">📱 Native WhatsApp Sync</h3>
+             <p style="color:var(--text-secondary); line-height:1.5;">Transitioning from a browser extension to a dedicated, self-hosted Node application to enable seamless syncing directly across the native mobile WhatsApp app.</p>
+           </div>
+           <div style="flex:1; min-width:300px; background:var(--bg-primary); padding:2rem; border-radius:12px; box-shadow:var(--shadow-md);">
+             <h3 style="color:var(--brand-primary); margin-bottom:1rem; display:flex; align-items:center; gap:8px;">🧠 Deep Local LLM Integration</h3>
+             <p style="color:var(--text-secondary); line-height:1.5;">Replacing the keyword-based MVP with advanced NLP by securely bridging the app to a local <strong>Ollama API</strong>. The bot will understand full context without ever transmitting data to external clouds.</p>
+           </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-inner">
@@ -241,7 +261,7 @@
             </div>
             SaveNote
           </div>
-          <p>AI-powered memory assistant for WhatsApp. Save and retrieve anything with a simple message. All processing happens locally with Ollama.</p>
+          <p>AI-powered memory assistant for WhatsApp. Designed for true privacy through 100% local processing with Ollama.</p>
         </div>
         <div class="footer-column">
           <h4>Product</h4>
