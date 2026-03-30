@@ -154,37 +154,49 @@
     render();
   }
 
-  function askOllama(q) {
+  function askLocalEngine(q) {
     if (!q.trim()) return;
     var notes = loadNotes();
     if (notes.length === 0) {
       document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>⚠️</span> Error</div>You have no notes for me to analyze.</div>';
       return;
     }
-    document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Thinking...</div>...</div>';
 
-    var notesText = notes.map(function(n, i){
-        return i + ". [" + n.category + "] " + n.summary;
-    }).join('\\n');
-
-    var prompt = "You are a helpful memory assistant. Based ONLY on the user's notes below, answer their question concisely. Do NOT make up information. If the answer is not in the notes, say so.\\n\\nNOTES:\\n" + notesText + "\\n\\nQUESTION: " + q;
-
-    fetch('http://127.0.0.1:11434/api/generate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'llama3',
-        prompt: prompt,
-        stream: false
-      })
-    }).then(function(res){
-      if (!res.ok) throw new Error('API Error');
-      return res.json();
-    }).then(function(data){
-      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Answer</div>'+esc(data.response).replace(/\\n/g,'<br>')+'</div>';
-    }).catch(function(e){
-      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>❌</span> Connection Failed</div>Make sure Ollama is running locally with Cross-Origin enabled:<br><code>OLLAMA_ORIGINS="*" ollama serve</code></div>';
-    });
+    // AI Heuristics Engine
+    var words = q.toLowerCase().replace(/[^a-z0-9\\s]/g, '').split(/\\s+/);
+    var stops = ['what','where','when','who','why','is','was','my','did','do','i','a','the','in','on','at','of','for','to','and','last'];
+    var keywords = words.filter(function(w){return w.length > 2 && stops.indexOf(w) === -1;});
+    
+    var intentCat = categorize(q); 
+    var bestMatch = null;
+    var bestScore = 0;
+    
+    for (var i=0; i<notes.length; i++) {
+      var n = notes[i];
+      var score = 0;
+      var text = (n.summary + ' ' + n.raw).toLowerCase();
+      
+      keywords.forEach(function(kw) {
+        if (text.indexOf(kw) > -1) score += 10;
+      });
+      if (intentCat !== 'other' && n.category === intentCat) score += 20;
+      score += (notes.length - i) * 0.1; // Recency boost
+      
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = n;
+      }
+    }
+    
+    var response = "";
+    if (bestScore < 5) {
+      response = "I couldn't find a strong match for your question in your notes. Try rephrasing or searching normally.";
+    } else {
+      var ds = new Date(bestMatch.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      response = "Based on your notes, here is the closest match from " + ds + ":<br><br>💬 <strong>" + esc(bestMatch.summary) + "</strong>";
+    }
+    
+    document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Answer</div>' + response + '</div>';
   }
 
   function render() {
@@ -234,12 +246,12 @@
     render();
   };
   document.getElementById('sn-ask-ai').onclick = function(){
-    askOllama(document.getElementById('sn-q').value);
+    askLocalEngine(document.getElementById('sn-q').value);
   };
   document.getElementById('sn-q').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      askOllama(e.target.value);
+      askLocalEngine(e.target.value);
     }
   });
   document.getElementById('sn-add-btn').onclick = function(){
