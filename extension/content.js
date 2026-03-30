@@ -7,13 +7,13 @@
   'use strict';
 
   // ===== Configuration =====
-  const CATEGORY_EMOJI = {
+  var CATEGORY_EMOJI = {
     book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
     location: '📍', person: '👤', recipe: '🍳', health: '🏥',
     finance: '💰', shopping: '🛒', other: '📌',
   };
 
-  const CATEGORY_KEYWORDS = {
+  var CATEGORY_KEYWORDS = {
     parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
     book: /\b(book|read|reading|author|novel|chapter|finished reading|started reading|page|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
     idea: /\b(idea|thought|maybe|what if|concept|brainstorm|could|should try|רעיון|אולי|מה אם)\b/i,
@@ -26,22 +26,22 @@
     finance: /\b(money|pay|paid|cost|price|expense|salary|bank|finance|budget|\$|₪|€|£|כסף|שילמתי|עלות|הוצאה)\b/i,
   };
 
-  let notes = [];
-  let lastProcessedMessages = new Set();
-  const BOT_NAME = 'SaveNote AI';
-  const BOT_COLOR = '#008069';
-  const BOT_DARK_COLOR = '#00a884';
+  var notes = [];
+  var lastProcessedMessages = new Set();
+  var BOT_NAME = 'SaveNote AI';
+  var BOT_COLOR = '#008069';
+  var BOT_DARK_COLOR = '#00a884';
 
   // SVG for bot avatar
-  const BOT_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
+  var BOT_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
 
   // The little point "tail" of an incoming msg
-  const TAIL_SVG = `<svg viewBox="0 0 8 13" width="8" height="13" class=""><path opacity=".13" fill="#0000000" d="M1.533 3.568 8 12.193V1H2.812C1.042 1 .474 2.156 1.533 3.568z"></path><path fill="currentColor" d="M1.533 2.568 8 11.193V0H2.812C1.042 0 .474 1.156 1.533 2.568z"></path></svg>`;
+  var TAIL_SVG = `<svg viewBox="0 0 8 13" width="8" height="13" class=""><path opacity=".13" fill="#0000000" d="M1.533 3.568 8 12.193V1H2.812C1.042 1 .474 2.156 1.533 3.568z"></path><path fill="currentColor" d="M1.533 2.568 8 11.193V0H2.812C1.042 0 .474 1.156 1.533 2.568z"></path></svg>`;
 
   // ===== Storage =====
   async function loadNotes() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['notes'], (data) => {
+    return new Promise(function(resolve) {
+      chrome.storage.local.get(['notes'], function(data) {
         notes = data.notes || [];
         resolve(notes);
       });
@@ -50,22 +50,22 @@
 
   async function saveNote(text) {
     if (!text.trim()) return;
-    const category = categorize(text);
+    var category = categorize(text);
     
-    return new Promise((resolve) => {
+    return new Promise(function(resolve) {
       chrome.runtime.sendMessage({
         type: 'SAVE_NOTE',
-        category,
+        category: category,
         summary: text.length > 120 ? text.substring(0, 117) + '...' : text,
         raw_message: text,
         metadata: {},
         attachments: [],
-      }, (response) => {
+      }, function(response) {
         if (response && response.success) {
           notes.unshift(response.note);
           // Simulate typing delay before responding
           simulateTyping();
-          setTimeout(() => {
+          setTimeout(function() {
             injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}<br><small>"${text}"</small>`);
             resolve(response.note);
           }, 1500);
@@ -76,8 +76,8 @@
 
   // ===== Categorization =====
   function categorize(text) {
-    for (const [category, regex] of Object.entries(CATEGORY_KEYWORDS)) {
-      if (regex.test(text)) return category;
+    for (var category in CATEGORY_KEYWORDS) {
+      if (CATEGORY_KEYWORDS[category].test(text)) return category;
     }
     return 'other';
   }
@@ -85,7 +85,7 @@
   // ===== UI: Bot Identity Hijacker =====
   function hijackIdentity() {
     // Determine Theme
-    const bodyClass = document.body.className;
+    var bodyClass = document.body.className;
     if (bodyClass.includes('dark')) {
       document.body.setAttribute('data-theme', 'dark');
     } else {
@@ -93,13 +93,13 @@
     }
 
     // 1. Rename 'You' in sidebar
-    const chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"]');
-    chatTitles.forEach(el => {
-      const txt = el.textContent || el.getAttribute('title') || '';
+    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"]');
+    chatTitles.forEach(function(el) {
+      var txt = el.textContent || el.getAttribute('title') || '';
       // Strip WhatsApp's invisible Bi-Di formatting characters (LRM, RLM) and trim
-      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
-      const isSelfChat = cleanTx === 'you' || 
+      var isSelfChat = cleanTx === 'you' || 
                          cleanTx === '(you)' || 
                          cleanTx.includes('chat with yourself') || 
                          cleanTx === 'me' || 
@@ -113,11 +113,11 @@
         el.className += ' sn-sidebar-identity';
         
         // Try to replace avatar
-        const parent = el.closest('[data-testid="cell-frame-container"]');
+        var parent = el.closest('[data-testid="cell-frame-container"]');
         if (parent) {
-          const avatar = parent.querySelector('[data-testid="avatar-img-container"] img, [data-testid="avatar-img-container"]');
+          var avatar = parent.querySelector('[data-testid="avatar-img-container"] img, [data-testid="avatar-img-container"]');
           if (avatar && !parent.dataset.snHijacked) {
-            const container = parent.querySelector('[data-testid="avatar-img-container"]');
+            var container = parent.querySelector('[data-testid="avatar-img-container"]');
             if (container) {
                 container.innerHTML = BOT_SVG;
             }
@@ -127,12 +127,12 @@
       }
     });
 
-    const headerTitle = document.querySelector('header span[title], [data-testid="conversation-info-header-chat-title"]');
+    var headerTitle = document.querySelector('header span[title], [data-testid="conversation-info-header-chat-title"]');
     if (headerTitle) {
-      const txt = headerTitle.textContent || headerTitle.getAttribute('title') || '';
-      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      var txt = headerTitle.textContent || headerTitle.getAttribute('title') || '';
+      var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
-      const isSelfChatHeader = cleanTx === 'you' || 
+      var isSelfChatHeader = cleanTx === 'you' || 
                                cleanTx === '(you)' || 
                                cleanTx.includes('chat with yourself') || 
                                cleanTx === 'me' || 
@@ -144,9 +144,9 @@
             headerTitle.textContent = BOT_NAME;
         }
         
-        const header = headerTitle.closest('header');
+        var header = headerTitle.closest('header');
         if (header) {
-          const avatarContainer = header.querySelector('[data-testid="avatar-img-container"]');
+          var avatarContainer = header.querySelector('[data-testid="avatar-img-container"]');
           if (avatarContainer && !header.dataset.snHijacked) {
             avatarContainer.innerHTML = BOT_SVG;
             header.dataset.snHijacked = 'true';
@@ -158,15 +158,15 @@
 
   function simulateTyping() {
       // Find the header subtitle and inject "typing..."
-      const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+      var headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
       if (headerTitle) {
-          const titleText = headerTitle.textContent;
+          var titleText = headerTitle.textContent;
           if (titleText === BOT_NAME) {
-            const subtitleContainer = document.querySelector('[data-testid="conversation-info-header-subtitle"]');
+            var subtitleContainer = document.querySelector('[data-testid="conversation-info-header-subtitle"]');
             if (subtitleContainer) {
-                const oldHTML = subtitleContainer.innerHTML;
+                var oldHTML = subtitleContainer.innerHTML;
                 subtitleContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
-                setTimeout(() => {
+                setTimeout(function() {
                     subtitleContainer.innerHTML = oldHTML; // Revert after 1.5s
                 }, 1400);
             }
@@ -174,16 +174,16 @@
       }
 
       // Sidebar typing
-      const chatTitles = document.querySelectorAll('.sn-sidebar-identity');
-      chatTitles.forEach(el => {
-          const parent = el.closest('[data-testid="cell-frame-container"]');
+      var chatTitles = document.querySelectorAll('.sn-sidebar-identity');
+      chatTitles.forEach(function(el) {
+          var parent = el.closest('[data-testid="cell-frame-container"]');
           if (parent) {
-              const lastMsgContainer = parent.querySelector('[data-testid="last-msg-status"]')?.parentNode;
+              var lastMsgContainer = parent.querySelector('[data-testid="last-msg-status"]')?.parentNode;
               if (lastMsgContainer && !lastMsgContainer.dataset.snTyping) {
-                  const oldHTML = lastMsgContainer.innerHTML;
+                  var oldHTML = lastMsgContainer.innerHTML;
                   lastMsgContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
                   lastMsgContainer.dataset.snTyping = 'true';
-                  setTimeout(() => {
+                  setTimeout(function() {
                       lastMsgContainer.innerHTML = oldHTML;
                       delete lastMsgContainer.dataset.snTyping;
                   }, 1400);
@@ -194,7 +194,7 @@
 
   function injectBotReply(html) {
     // 1. Try finding the scrollable message list inside the new WhatsApp layout
-    let chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
+    var chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
                    document.querySelector('.copyable-area [role="application"]') ||
                    document.querySelector('#main .copyable-area');
@@ -202,10 +202,10 @@
     // Fallback if completely undetected
     if (!chatPane) return;
 
-    const row = document.createElement('div');
+    var row = document.createElement('div');
     row.className = 'sn-bot-msg-row';
     
-    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     row.innerHTML = `
       <div class="sn-bot-bubble-wrapper">
@@ -221,27 +221,27 @@
     `;
 
     // Append to the list of messages container (not just the scroll area)
-    const list = chatPane.querySelector('[role="list"]') || chatPane;
+    var list = chatPane.querySelector('[role="list"]') || chatPane;
     list.appendChild(row);
     
     // Scroll to bottom
-    setTimeout(() => {
+    setTimeout(function() {
       chatPane.scrollTop = chatPane.scrollHeight + 500;
     }, 100);
   }
 
   // ===== Command Handler =====
   function handleCommand(text) {
-    const lower = text.toLowerCase();
+    var lower = text.toLowerCase();
     
     if (lower.includes('what') && lower.includes('book')) {
-      const books = notes.filter(n => n.category === 'book');
+      var books = notes.filter(function(n) { return n.category === 'book'; });
       simulateTyping();
-      setTimeout(() => {
+      setTimeout(function() {
           if (books.length === 0) {
             injectBotReply("📚 You haven't saved any books yet! Just send me a book title to start your list.");
           } else {
-            const list = books.slice(0, 5).map(b => `• ${b.summary}`).join('<br>');
+            var list = books.slice(0, 5).map(function(b) { return '• ' + b.summary; }).join('<br>');
             injectBotReply(`📚 <strong>Here are the last few books you read:</strong><br>${list}`);
           }
       }, 1500);
@@ -249,9 +249,9 @@
     }
     
     if (lower.includes('where') && lower.includes('park')) {
-      const parking = notes.find(n => n.category === 'parking');
+      var parking = notes.find(function(n) { return n.category === 'parking'; });
       simulateTyping();
-      setTimeout(() => {
+      setTimeout(function() {
           if (!parking) {
             injectBotReply("🅿️ I don't have any recent parking notes. Don't forget to tell me where you park next time!");
           } else {
@@ -262,13 +262,13 @@
     }
 
     if (lower.includes('what') && (lower.includes('shop') || lower.includes('groceries'))) {
-        const shopping = notes.filter(n => n.category === 'shopping');
+        var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
         simulateTyping();
-        setTimeout(() => {
+        setTimeout(function() {
             if (shopping.length === 0) {
               injectBotReply("🛒 Your shopping list is empty.");
             } else {
-              const list = shopping.map(s => `• ${s.summary}`).join('<br>');
+              var list = shopping.map(function(s) { return '• ' + s.summary; }).join('<br>');
               injectBotReply(`🛒 <strong>Your shopping list:</strong><br>${list}`);
             }
         }, 1500);
@@ -277,7 +277,7 @@
 
     if (lower.includes('help') || lower.includes('hello') || lower.includes('hi ')) {
       simulateTyping();
-      setTimeout(() => {
+      setTimeout(function() {
           injectBotReply(`👋 <strong>Hi! I'm ${BOT_NAME}.</strong><br>I'm your personal memory assistant. Just message me anything you want to remember, and I'll categorize it for you!<br><br>Ask me:<br>• "What books did I read?"<br>• "Where did I park?"<br>• "What's on my shopping list?"`);
       }, 1500);
       return true;
@@ -292,23 +292,24 @@
     setInterval(hijackIdentity, 1500);
 
     // 2. Message Mutation Observer
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          processNewElements(node);
+    var observer = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var mutation = mutations[i];
+        for (var j = 0; j < mutation.addedNodes.length; j++) {
+          var node = mutation.addedNodes[j];
+          if (node.nodeType === Node.ELEMENT_NODE) processNewElements(node);
         }
       }
     });
 
-    const app = document.querySelector('#app') || document.body;
+    var app = document.querySelector('#app') || document.body;
     if (app) {
       observer.observe(app, { childList: true, subtree: true });
     }
   }
 
   function processNewElements(el) {
-    const msgContainers = el.querySelectorAll ? [
+    var msgContainers = el.querySelectorAll ? [
       ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]'),
       ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]') ? [el] : []),
     ] : [];
@@ -317,17 +318,18 @@
       console.log(`🤖 [SaveNote] Found ${msgContainers.length} possible message containers`);
     }
 
-    for (const container of msgContainers) {
-      const dataId = container.getAttribute('data-id');
-      const isOutgoingId = dataId && dataId.startsWith('true_');
-      const isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
-      const hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
+    for (var i = 0; i < msgContainers.length; i++) {
+      var container = msgContainers[i];
+      var dataId = container.getAttribute('data-id');
+      var isOutgoingId = dataId && dataId.startsWith('true_');
+      var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
+      var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
       
-      const isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
+      var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
 
       if (!isOutgoing) continue;
 
-      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || 
+      var textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || 
                           container.querySelector('.selectable-text') ||
                           container.querySelector('span.copyable-text');
       
@@ -336,19 +338,19 @@
           continue;
       }
 
-      const text = textWrapper.textContent.trim();
+      var text = textWrapper.textContent.trim();
       if (!text || text.length < 2) continue;
 
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
       console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
-      checkSelfChat().then((isSelf) => {
+      checkSelfChat().then(function(isSelf) {
         if (isSelf) {
           console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
           if (!handleCommand(text)) {
             // Wait a tiny bit to make sure DOM settles before saving state
-            setTimeout(() => { saveNote(text); }, 200);
+            setTimeout(function() { saveNote(text); }, 200);
           }
         } else {
             console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
@@ -358,13 +360,13 @@
   }
 
   async function checkSelfChat() {
-    const header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
+    var header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
     if (!header) {
         console.log('🤖 [SaveNote] Conversation header not found.');
         return false;
     }
 
-    const titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
+    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
                     header.querySelector('span[title]') ||
                     header.querySelector('[data-testid="chat-subtitle"]')?.previousElementSibling;
     
@@ -373,8 +375,8 @@
         return false;
     }
 
-    const title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    const cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    var title = titleEl.textContent || titleEl.getAttribute('title') || '';
+    var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
     
     console.log('🤖 [SaveNote] Current chat title:', title);
 
@@ -388,7 +390,7 @@
   // ===== Initialize =====
   function init() {
     console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bot Mode activated`);
-    loadNotes().then(() => {
+    loadNotes().then(function() {
       startObservers();
     });
   }
@@ -397,6 +399,6 @@
   if (document.readyState === 'complete') {
     setTimeout(init, 2000);
   } else {
-    window.addEventListener('load', () => setTimeout(init, 2000));
+    window.addEventListener('load', function() { setTimeout(init, 2000); });
   }
 })();
