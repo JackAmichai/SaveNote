@@ -192,16 +192,14 @@
       });
   }
 
-  // ===== UI: Bot Reply Injector =====
   function injectBotReply(html) {
     // 1. Try finding the scrollable message list inside the new WhatsApp layout
-    let chatPane = document.querySelector('[data-testid="conversation-panel-body"]');
+    let chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
+                   document.querySelector('[data-testid="conversation-panel-messages"]') ||
+                   document.querySelector('.copyable-area [role="application"]') ||
+                   document.querySelector('#main .copyable-area');
     
-    // Fallback if not found
-    if (!chatPane) {
-      chatPane = document.querySelector('.copyable-area [role="application"]');
-    }
-    
+    // Fallback if completely undetected
     if (!chatPane) return;
 
     const row = document.createElement('div');
@@ -303,7 +301,7 @@
       }
     });
 
-    const app = document.querySelector('#app');
+    const app = document.querySelector('#app') || document.body;
     if (app) {
       observer.observe(app, { childList: true, subtree: true });
     }

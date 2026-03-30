@@ -124,7 +124,10 @@
   // ===== Bot Reply Injection =====
   function injectBotReply(html) {
     let chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
-                     document.querySelector('.copyable-area [role="application"]');
+                   document.querySelector('[data-testid="conversation-panel-messages"]') ||
+                   document.querySelector('.copyable-area [role="application"]') ||
+                   document.querySelector('#main .copyable-area');
+                   
     if (!chatPane) return;
 
     if (!document.getElementById('sn-bot-css')) {
@@ -282,7 +285,9 @@
       }
     }
   });
-  const app = document.querySelector('#app');
+  
+  // Attach to body to ensure we don't miss #app name changes
+  const app = document.querySelector('#app') || document.body;
   if (app) observer.observe(app, { childList: true, subtree: true });
   
   console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bookmarklet Ready`);
