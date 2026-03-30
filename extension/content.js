@@ -1,6 +1,6 @@
 /**
  * SaveNote — WhatsApp Web Content Script
- * Native Bot Mode: Hijacks the "Self-Chat" to act as the AI bot.
+ * Pixel-Perfect Native Bot Mode
  */
 
 (function () {
@@ -28,11 +28,15 @@
 
   let notes = [];
   let lastProcessedMessages = new Set();
-  const BOT_NAME = 'SaveNote AI 💬';
+  const BOT_NAME = 'SaveNote AI';
   const BOT_COLOR = '#008069';
+  const BOT_DARK_COLOR = '#00a884';
 
   // SVG for bot avatar
-  const BOT_SVG = `<svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
+  const BOT_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
+
+  // The little point "tail" of an incoming msg
+  const TAIL_SVG = `<svg viewBox="0 0 8 13" width="8" height="13" class=""><path opacity=".13" fill="#0000000" d="M1.533 3.568 8 12.193V1H2.812C1.042 1 .474 2.156 1.533 3.568z"></path><path fill="currentColor" d="M1.533 2.568 8 11.193V0H2.812C1.042 0 .474 1.156 1.533 2.568z"></path></svg>`;
 
   // ===== Storage =====
   async function loadNotes() {
@@ -59,8 +63,12 @@
       }, (response) => {
         if (response && response.success) {
           notes.unshift(response.note);
-          injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}<br><small>"${text}"</small>`);
-          resolve(response.note);
+          // Simulate typing delay before responding
+          simulateTyping();
+          setTimeout(() => {
+            injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}<br><small>"${text}"</small>`);
+            resolve(response.note);
+          }, 1500);
         }
       });
     });
@@ -76,22 +84,34 @@
 
   // ===== UI: Bot Identity Hijacker =====
   function hijackIdentity() {
+    // Determine Theme
+    const bodyClass = document.body.className;
+    if (bodyClass.includes('dark')) {
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.body.setAttribute('data-theme', 'light');
+    }
+
     // 1. Rename 'You' in sidebar
     const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
     chatTitles.forEach(el => {
       const txt = el.textContent || el.getAttribute('title') || '';
-      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself') {
-        el.textContent = BOT_NAME;
-        el.style.color = BOT_COLOR;
-        el.style.fontWeight = 'bold';
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt === BOT_NAME) {
+        if (txt !== BOT_NAME) {
+          el.textContent = BOT_NAME;
+        }
+        el.className += ' sn-sidebar-identity';
         
         // Try to replace avatar
         const parent = el.closest('[data-testid="cell-frame-container"]');
         if (parent) {
-          const avatar = parent.querySelector('[data-testid="avatar-img-container"]');
-          if (avatar && !avatar.dataset.snHijacked) {
-            avatar.innerHTML = BOT_SVG;
-            avatar.dataset.snHijacked = 'true';
+          const avatar = parent.querySelector('[data-testid="avatar-img-container"] img, [data-testid="avatar-img-container"]');
+          if (avatar && !parent.dataset.snHijacked) {
+            const container = parent.querySelector('[data-testid="avatar-img-container"]');
+            if (container) {
+                container.innerHTML = BOT_SVG;
+            }
+            parent.dataset.snHijacked = 'true';
           }
         }
       }
@@ -101,44 +121,97 @@
     const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
     if (headerTitle) {
       const txt = headerTitle.textContent;
-      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt.includes('SaveNote')) {
-        headerTitle.textContent = BOT_NAME;
+      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt === BOT_NAME) {
+        if (txt !== BOT_NAME) {
+            headerTitle.textContent = BOT_NAME;
+        }
         
         const header = headerTitle.closest('header');
         if (header) {
-          const avatar = header.querySelector('[data-testid="avatar-img-container"]');
-          if (avatar && !avatar.dataset.snHijacked) {
-            avatar.innerHTML = BOT_SVG;
-            avatar.dataset.snHijacked = 'true';
+          const avatarContainer = header.querySelector('[data-testid="avatar-img-container"]');
+          if (avatarContainer && !header.dataset.snHijacked) {
+            avatarContainer.innerHTML = BOT_SVG;
+            header.dataset.snHijacked = 'true';
           }
         }
       }
     }
   }
 
+  function simulateTyping() {
+      // Find the header subtitle and inject "typing..."
+      const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+      if (headerTitle) {
+          const titleText = headerTitle.textContent;
+          if (titleText === BOT_NAME) {
+            const subtitleContainer = document.querySelector('[data-testid="conversation-info-header-subtitle"]');
+            if (subtitleContainer) {
+                const oldHTML = subtitleContainer.innerHTML;
+                subtitleContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
+                setTimeout(() => {
+                    subtitleContainer.innerHTML = oldHTML; // Revert after 1.5s
+                }, 1400);
+            }
+          }
+      }
+
+      // Sidebar typing
+      const chatTitles = document.querySelectorAll('.sn-sidebar-identity');
+      chatTitles.forEach(el => {
+          const parent = el.closest('[data-testid="cell-frame-container"]');
+          if (parent) {
+              const lastMsgContainer = parent.querySelector('[data-testid="last-msg-status"]')?.parentNode;
+              if (lastMsgContainer && !lastMsgContainer.dataset.snTyping) {
+                  const oldHTML = lastMsgContainer.innerHTML;
+                  lastMsgContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
+                  lastMsgContainer.dataset.snTyping = 'true';
+                  setTimeout(() => {
+                      lastMsgContainer.innerHTML = oldHTML;
+                      delete lastMsgContainer.dataset.snTyping;
+                  }, 1400);
+              }
+          }
+      });
+  }
+
   // ===== UI: Bot Reply Injector =====
   function injectBotReply(html) {
-    const chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
-                     document.querySelector('.copyable-area [role="application"]');
+    // 1. Try finding the scrollable message list inside the new WhatsApp layout
+    let chatPane = document.querySelector('[data-testid="conversation-panel-body"]');
+    
+    // Fallback if not found
+    if (!chatPane) {
+      chatPane = document.querySelector('.copyable-area [role="application"]');
+    }
+    
     if (!chatPane) return;
 
-    const replyContainer = document.createElement('div');
-    replyContainer.className = 'sn-bot-reply-container';
+    const row = document.createElement('div');
+    row.className = 'sn-bot-msg-row';
     
-    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    replyContainer.innerHTML = `
-      <div class="sn-bot-bubble">
-        <div class="sn-bot-header">${BOT_NAME}</div>
-        <div class="sn-bot-content">${html}</div>
-        <div class="sn-bot-time">${now}</div>
+    row.innerHTML = \`
+      <div class="sn-bot-bubble-wrapper">
+        <span class="sn-bot-tail">\${TAIL_SVG}</span>
+        <div class="sn-bot-bubble">
+          <div class="sn-bot-name">\${BOT_NAME}</div>
+          <div class="sn-bot-text">\${html}</div>
+          <div class="sn-bot-meta">
+            <span class="sn-bot-time">\${nowStr}</span>
+          </div>
+        </div>
       </div>
-    `;
+    \`;
 
-    chatPane.appendChild(replyContainer);
+    // Append to the list of messages container (not just the scroll area)
+    const list = chatPane.querySelector('[role="list"]') || chatPane;
+    list.appendChild(row);
     
     // Scroll to bottom
-    chatPane.scrollTop = chatPane.scrollHeight;
+    setTimeout(() => {
+      chatPane.scrollTop = chatPane.scrollHeight + 500;
+    }, 100);
   }
 
   // ===== Command Handler =====
@@ -147,38 +220,50 @@
     
     if (lower.includes('what') && lower.includes('book')) {
       const books = notes.filter(n => n.category === 'book');
-      if (books.length === 0) {
-        injectBotReply("📚 You haven't saved any books yet! Just send me a book title to start your list.");
-      } else {
-        const list = books.slice(0, 5).map(b => `• ${b.summary}`).join('<br>');
-        injectBotReply(`📚 <strong>Here are the last few books you read:</strong><br>${list}`);
-      }
+      simulateTyping();
+      setTimeout(() => {
+          if (books.length === 0) {
+            injectBotReply("📚 You haven't saved any books yet! Just send me a book title to start your list.");
+          } else {
+            const list = books.slice(0, 5).map(b => `• ${b.summary}`).join('<br>');
+            injectBotReply(`📚 <strong>Here are the last few books you read:</strong><br>${list}`);
+          }
+      }, 1500);
       return true;
     }
     
     if (lower.includes('where') && lower.includes('park')) {
       const parking = notes.find(n => n.category === 'parking');
-      if (!parking) {
-        injectBotReply("🅿️ I don't have any recent parking notes. Don't forget to tell me where you park next time!");
-      } else {
-        injectBotReply(`🅿️ <strong>Last parking spot found:</strong><br>"${parking.raw_message}"<br><small>Saved ${new Date(parking.created_at).toLocaleTimeString()}</small>`);
-      }
+      simulateTyping();
+      setTimeout(() => {
+          if (!parking) {
+            injectBotReply("🅿️ I don't have any recent parking notes. Don't forget to tell me where you park next time!");
+          } else {
+            injectBotReply(`🅿️ <strong>Last parking spot found:</strong><br>"${parking.raw_message}"<br><small>Saved ${new Date(parking.created_at).toLocaleTimeString()}</small>`);
+          }
+      }, 1500);
       return true;
     }
 
-    if (lower.includes('what') && lower.includes('shopping')) {
+    if (lower.includes('what') && (lower.includes('shop') || lower.includes('groceries'))) {
         const shopping = notes.filter(n => n.category === 'shopping');
-        if (shopping.length === 0) {
-          injectBotReply("🛒 Your shopping list is empty.");
-        } else {
-          const list = shopping.map(s => `• ${s.summary}`).join('<br>');
-          injectBotReply(`🛒 <strong>Your shopping list:</strong><br>${list}`);
-        }
+        simulateTyping();
+        setTimeout(() => {
+            if (shopping.length === 0) {
+              injectBotReply("🛒 Your shopping list is empty.");
+            } else {
+              const list = shopping.map(s => `• ${s.summary}`).join('<br>');
+              injectBotReply(`🛒 <strong>Your shopping list:</strong><br>${list}`);
+            }
+        }, 1500);
         return true;
-      }
+    }
 
     if (lower.includes('help') || lower.includes('hello') || lower.includes('hi ')) {
-      injectBotReply(`👋 <strong>Hi! I'm SaveNote AI.</strong><br>I'm your personal memory assistant. Just message me anything you want to remember, and I'll categorize it for you!<br><br>Try asking:<br>• "What books did I read?"<br>• "Where did I park?"<br>• "What's on my shopping list?"`);
+      simulateTyping();
+      setTimeout(() => {
+          injectBotReply(`👋 <strong>Hi! I'm ${BOT_NAME}.</strong><br>I'm your personal memory assistant. Just message me anything you want to remember, and I'll categorize it for you!<br><br>Ask me:<br>• "What books did I read?"<br>• "Where did I park?"<br>• "What's on my shopping list?"`);
+      }, 1500);
       return true;
     }
 
@@ -188,7 +273,7 @@
   // ===== WhatsApp Web Message Observer =====
   function startObservers() {
     // 1. Identity Hijacker Interval
-    setInterval(hijackIdentity, 2000);
+    setInterval(hijackIdentity, 1500);
 
     // 2. Message Mutation Observer
     const observer = new MutationObserver((mutations) => {
@@ -232,7 +317,8 @@
       checkSelfChat().then((isSelf) => {
         if (isSelf) {
           if (!handleCommand(text)) {
-            saveNote(text);
+            // Wait a tiny bit to make sure DOM settles before saving state
+            setTimeout(() => { saveNote(text); }, 200);
           }
         }
       });
@@ -248,12 +334,12 @@
     if (!titleEl) return false;
 
     const title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    return title.includes('SaveNote') || title.includes('(You)') || title.includes('You');
+    return title.includes(BOT_NAME) || title.includes('(You)') || title.includes('You');
   }
 
   // ===== Initialize =====
   function init() {
-    console.log('🤖 SaveNote Native Bot Mode activated');
+    console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bot Mode activated`);
     loadNotes().then(() => {
       startObservers();
     });

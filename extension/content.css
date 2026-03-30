@@ -1,79 +1,119 @@
 /* ===== SaveNote — Native Bot Mode Styles ===== */
 
-/* Bot Message Bubble (Injected into WhatsApp) */
-.sn-bot-reply-container {
+/* Bot Message Row (injected into conversation pane) */
+.sn-bot-msg-row {
     display: flex;
     flex-direction: column;
-    margin-bottom: 8px;
+    width: 100%;
+    margin-bottom: 2px;
     align-items: flex-start;
-    animation: sn-fade-in 0.3s ease-out;
+    animation: sn-fade-in 0.2s ease-out;
 }
 
 @keyframes sn-fade-in {
-    from { opacity: 0; transform: translateY(5px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.sn-bot-bubble {
-    background-color: #ffffff;
-    border-radius: 0 8px 8px 8px;
-    padding: 8px 12px;
-    max-width: 65%;
-    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+.sn-bot-bubble-wrapper {
     position: relative;
-    font-size: 14.2px;
-    line-height: 19px;
-    color: #111b21;
-    margin-left: 8px;
+    display: flex;
+    max-width: 65%;
+    margin-left: 9px; /* Space for the tail */
+    margin-bottom: 8px;
+    margin-top: 8px;
 }
 
-/* The "tail" of the bubble */
-.sn-bot-bubble::before {
-    content: "";
+/* The exact WhatsApp tail SVG wrapper */
+.sn-bot-tail {
     position: absolute;
     top: 0;
     left: -8px;
     width: 8px;
     height: 13px;
-    background: radial-gradient(circle at 0 100%, transparent 8px, #ffffff 8px);
+    color: #ffffff; /* WhatsApp Web incoming msg color in light mode */
+    z-index: 100;
 }
 
-.sn-bot-header {
-    font-size: 12px;
-    font-weight: 600;
-    color: #008069;
-    margin-bottom: 4px;
+[data-theme="dark"] .sn-bot-tail {
+    color: #202c33; /* WhatsApp Web dark mode incoming msg */
+}
+
+.sn-bot-bubble {
+    background-color: #ffffff;
+    border-radius: 0 7.5px 7.5px 7.5px;
+    padding: 6px 7px 8px 9px;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #111b21;
+    font-size: 14.2px;
+    line-height: 19px;
     display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+[data-theme="dark"] .sn-bot-bubble {
+    background-color: #202c33;
+    color: #e9edef;
+    box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+}
+
+.sn-bot-name {
+    font-size: 12.8px;
+    font-weight: 500;
+    color: #008069; /* Theme color */
+    margin-bottom: 2px;
+    line-height: 22px;
+}
+
+[data-theme="dark"] .sn-bot-name {
+    color: #00a884;
+}
+
+.sn-bot-text {
+    word-break: break-word;
+    white-space: pre-wrap;
+    margin-bottom: 4px; /* Space for time */
+}
+
+.sn-bot-meta {
+    display: flex;
+    justify-content: flex-end;
     align-items: center;
-    gap: 4px;
+    margin-top: -10px;
+    float: right;
+    margin-left: 14px;
 }
 
 .sn-bot-time {
     font-size: 11px;
     color: #667781;
-    text-align: right;
-    margin-top: 4px;
+    margin-top: 10px;
 }
 
-/* Category Pill inside bubble */
-.sn-bot-pill {
-    display: inline-block;
-    background: rgba(0, 128, 105, 0.1);
-    color: #008069;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-top: 6px;
-    text-transform: uppercase;
+[data-theme="dark"] .sn-bot-time {
+    color: #8696a0;
 }
 
 /* Sidebar Overwrite Styles */
 .sn-sidebar-identity {
     color: #008069 !important;
-    font-weight: 700 !important;
+    font-weight: 500 !important;
 }
 
-.sn-active-bot-chat {
-    background-color: rgba(0, 128, 105, 0.05) !important;
+[data-theme="dark"] .sn-sidebar-identity {
+    color: #00a884 !important;
+}
+
+/* Typing indicator text injection */
+.sn-typing-text {
+    color: #008069 !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    font-family: inherit;
+}
+
+[data-theme="dark"] .sn-typing-text {
+    color: #00a884 !important;
 }
