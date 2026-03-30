@@ -309,9 +309,13 @@
 
   function processNewElements(el) {
     const msgContainers = el.querySelectorAll ? [
-      ...el.querySelectorAll('[data-testid="msg-container"], div[data-id]'),
-      ...(el.matches && el.matches('[data-testid="msg-container"], div[data-id]') ? [el] : []),
+      ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]'),
+      ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]') ? [el] : []),
     ] : [];
+
+    if (msgContainers.length > 0) {
+      console.log(`🤖 [SaveNote] Found ${msgContainers.length} possible message containers`);
+    }
 
     for (const container of msgContainers) {
       const dataId = container.getAttribute('data-id');
@@ -323,21 +327,31 @@
 
       if (!isOutgoing) continue;
 
-      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || container.querySelector('.selectable-text');
-      if (!textWrapper) continue;
+      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || 
+                          container.querySelector('.selectable-text') ||
+                          container.querySelector('span.copyable-text');
+      
+      if (!textWrapper) {
+          console.log('🤖 [SaveNote] Found outgoing container but no text wrapper:', container);
+          continue;
+      }
 
       const text = textWrapper.textContent.trim();
       if (!text || text.length < 2) continue;
 
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
+      console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
       checkSelfChat().then((isSelf) => {
         if (isSelf) {
+          console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
           if (!handleCommand(text)) {
             // Wait a tiny bit to make sure DOM settles before saving state
             setTimeout(() => { saveNote(text); }, 200);
           }
+        } else {
+            console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
         }
       });
     }
@@ -345,15 +359,25 @@
 
   async function checkSelfChat() {
     const header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
-    if (!header) return false;
+    if (!header) {
+        console.log('🤖 [SaveNote] Conversation header not found.');
+        return false;
+    }
 
     const titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
-                    header.querySelector('span[title]');
-    if (!titleEl) return false;
+                    header.querySelector('span[title]') ||
+                    header.querySelector('[data-testid="chat-subtitle"]')?.previousElementSibling;
+    
+    if (!titleEl) {
+        console.log('🤖 [SaveNote] Chat title element not found in header.');
+        return false;
+    }
 
     const title = titleEl.textContent || titleEl.getAttribute('title') || '';
     const cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
     
+    console.log('🤖 [SaveNote] Current chat title:', title);
+
     return title.includes(BOT_NAME) || 
            cleanTx.includes('(you)') || 
            cleanTx === 'you' || 

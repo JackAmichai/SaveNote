@@ -221,10 +221,15 @@
   }
 
   function processNewElements(el) {
+    console.log('🤖 [SaveNote] Checking new elements...');
     const msgContainers = el.querySelectorAll ? [
-      ...el.querySelectorAll('[data-testid="msg-container"], div[data-id]'),
-      ...(el.matches && el.matches('[data-testid="msg-container"], div[data-id]') ? [el] : []),
+      ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]'),
+      ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]') ? [el] : []),
     ] : [];
+
+    if (msgContainers.length > 0) {
+        console.log(`🤖 [SaveNote] Found ${msgContainers.length} possible message containers`);
+    }
 
     for (const container of msgContainers) {
       const dataId = container.getAttribute('data-id');
@@ -236,22 +241,41 @@
 
       if (!isOutgoing) continue;
 
-      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || container.querySelector('.selectable-text');
-      if (!textWrapper) continue;
+      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || 
+                          container.querySelector('.selectable-text') ||
+                          container.querySelector('span.copyable-text');
+      
+      if (!textWrapper) {
+          console.log('🤖 [SaveNote] Found outgoing container but no text wrapper:', container);
+          continue;
+      }
 
       const text = textWrapper.textContent.trim();
       if (!text || text.length < 2) continue;
 
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
+      console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
       const header = document.querySelector('header') || document.querySelector('[data-testid="conversation-header"]');
       if (header) {
-        const titleEl = header.querySelector('span[title]') || header.querySelector('[data-testid="conversation-info-header-chat-title"]');
+        const titleEl = header.querySelector('span[title]') || 
+                        header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
+                        header.querySelector('[data-testid="chat-subtitle"]')?.previousElementSibling;
+        
         const title = titleEl ? (titleEl.textContent || titleEl.getAttribute('title') || '') : '';
         const cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
         
-        if (title.includes(BOT_NAME) || cleanTx.includes('(you)') || cleanTx === 'you' || cleanTx === 'me' || cleanTx === 'אני') {
+        console.log('🤖 [SaveNote] Current chat title:', title);
+
+        const isSelf = title.includes(BOT_NAME) || 
+                       cleanTx.includes('(you)') || 
+                       cleanTx === 'you' || 
+                       cleanTx === 'me' || 
+                       cleanTx === 'אני';
+
+        if (isSelf) {
+            console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
             if (!handleCommand(text)) {
                 setTimeout(() => {
                     var category = categorize(text);
@@ -270,7 +294,11 @@
                     }, 1500);
                 }, 200);
             }
+        } else {
+            console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
         }
+      } else {
+          console.log('🤖 [SaveNote] Conversation header not found.');
       }
     }
   }
