@@ -2,10 +2,11 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=350, initial-scale=1">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      width: 320px;
+      width: 350px;
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
       background: #FFFFFF;
       color: #111B21;
@@ -19,15 +20,8 @@
       gap: 12px;
     }
     .popup-header svg { fill: white; }
-    .popup-header h1 {
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .popup-header p {
-      font-size: 12px;
-      opacity: 0.85;
-      margin-top: 2px;
-    }
+    .popup-header h1 { font-size: 16px; font-weight: 600; }
+    .popup-header p { font-size: 12px; opacity: 0.85; margin-top: 2px; }
     .popup-body { padding: 16px 20px; }
     .popup-stat {
       display: flex;
@@ -38,34 +32,50 @@
       font-size: 14px;
     }
     .popup-stat:last-child { border: none; }
-    .popup-stat-value {
-      font-weight: 700;
-      color: #008069;
-    }
+    .popup-stat-value { font-weight: 700; color: #008069; }
     .popup-btn {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
-      padding: 12px;
-      margin-top: 12px;
+      padding: 10px;
+      margin-top: 10px;
       border: none;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
       transition: background 0.15s;
     }
-    .popup-btn-primary {
-      background: #008069;
-      color: white;
-    }
-    .popup-btn-primary:hover {
-      background: #005C4B;
-    }
+    .popup-btn-primary { background: #008069; color: white; }
+    .popup-btn-primary:hover { background: #005C4B; }
+    .popup-btn-secondary { background: #F0F2F5; color: #111B21; }
+    .popup-btn-secondary:hover { background: #E9EDEF; }
+    .popup-btn-danger { background: #FF4B4B; color: white; }
+    .popup-btn-danger:hover { background: #D43838; }
     .popup-btn svg { fill: currentColor; }
+    .notes-section {
+      margin-top: 16px;
+      border-top: 1px solid #E9EDEF;
+      padding-top: 12px;
+    }
+    .notes-title { font-size: 13px; font-weight: 600; color: #54656F; margin-bottom: 10px; }
+    .note-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #F0F2F5;
+      font-size: 12px;
+    }
+    .note-item:last-child { border: none; }
+    .note-emoji { font-size: 16px; min-width: 20px; }
+    .note-content { flex: 1; color: #111B21; }
+    .note-category { color: #8696A0; font-size: 11px; margin-top: 2px; }
+    .no-notes { color: #8696A0; font-size: 12px; text-align: center; padding: 16px 0; }
+    .action-row { display: flex; gap: 8px; margin-top: 12px; }
     .popup-footer {
       padding: 12px 20px;
       text-align: center;
@@ -73,10 +83,14 @@
       color: #8696A0;
       border-top: 1px solid #E9EDEF;
     }
-    .popup-footer a {
-      color: #008069;
-      text-decoration: none;
+    .popup-footer a { color: #008069; text-decoration: none; }
+    .empty-state {
+      text-align: center;
+      padding: 20px 0;
+      color: #8696A0;
+      font-size: 13px;
     }
+    .empty-state svg { fill: #8696A0; margin-bottom: 8px; }
   </style>
 </head>
 <body>
@@ -89,29 +103,49 @@
       <p>WhatsApp Memory Assistant</p>
     </div>
   </div>
-
+  
   <div class="popup-body">
     <div class="popup-stat">
       <span>Notes saved</span>
       <span class="popup-stat-value" id="note-count">0</span>
     </div>
     <div class="popup-stat">
-      <span>Categories</span>
+      <span>Categories used</span>
       <span class="popup-stat-value" id="cat-count">0</span>
     </div>
-
-    <button class="popup-btn popup-btn-primary" id="open-whatsapp">
-      <svg viewBox="0 0 24 24" width="18" height="18">
-        <path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914z"/>
+    
+    <div class="action-row">
+      <button class="popup-btn popup-btn-primary" id="open-whatsapp" style="flex:1;">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914z"/>
+        </svg>
+        Open WhatsApp
+      </button>
+      <button class="popup-btn popup-btn-secondary" id="export-btn" style="flex:1;">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path d="M12 16l-6-6h4V4h4v6h4l-6 6zm-6 4h12v-2H6v2z"/>
+        </svg>
+        Export
+      </button>
+    </div>
+    
+    <div class="notes-section" id="notes-section" style="display:none;">
+      <div class="notes-title">Recent Notes</div>
+      <div id="notes-list"></div>
+    </div>
+    
+    <div class="empty-state" id="empty-state">
+      <svg viewBox="0 0 24 24" width="40" height="40">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
       </svg>
-      Open WhatsApp Web
-    </button>
+      <p>No notes yet. Start messaging in WhatsApp!</p>
+    </div>
   </div>
-
+  
   <div class="popup-footer">
-    <a href="https://github.com/JackAmichai/SaveNote" target="_blank">GitHub</a> · Open Source
+    <a href="https://github.com/JackAmichai/SaveNote" target="_blank">GitHub</a> · <a href="https://savenote.vercel.app" target="_blank">Dashboard</a> · Open Source
   </div>
-
+  
   <script src="popup.js"></script>
 </body>
 </html>
