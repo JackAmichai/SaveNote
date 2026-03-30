@@ -93,17 +93,18 @@
     }
 
     // 1. Rename 'You' in sidebar
-    const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
+    const chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"]');
     chatTitles.forEach(el => {
       const txt = el.textContent || el.getAttribute('title') || '';
-      const lowerTx = txt.toLowerCase();
+      // Strip WhatsApp's invisible Bi-Di formatting characters (LRM, RLM) and trim
+      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
-      const isSelfChat = lowerTx === 'you' || 
-                         lowerTx === '(you)' || 
-                         lowerTx.includes('chat with yourself') || 
-                         lowerTx === 'me' || 
-                         lowerTx === 'אני' || 
-                         txt === BOT_NAME;
+      const isSelfChat = cleanTx === 'you' || 
+                         cleanTx === '(you)' || 
+                         cleanTx.includes('chat with yourself') || 
+                         cleanTx === 'me' || 
+                         cleanTx === 'אני' || 
+                         txt.includes(BOT_NAME);
 
       if (isSelfChat) {
         if (txt !== BOT_NAME) {
@@ -126,17 +127,17 @@
       }
     });
 
-    // 2. Rename in active conversation header
-    const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+    const headerTitle = document.querySelector('header span[title], [data-testid="conversation-info-header-chat-title"]');
     if (headerTitle) {
-      const txt = headerTitle.textContent;
-      const lowerTx = txt.toLowerCase();
-      const isSelfChatHeader = lowerTx === 'you' || 
-                               lowerTx === '(you)' || 
-                               lowerTx.includes('chat with yourself') || 
-                               lowerTx === 'me' || 
-                               lowerTx === 'אני' || 
-                               txt === BOT_NAME;
+      const txt = headerTitle.textContent || headerTitle.getAttribute('title') || '';
+      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      
+      const isSelfChatHeader = cleanTx === 'you' || 
+                               cleanTx === '(you)' || 
+                               cleanTx.includes('chat with yourself') || 
+                               cleanTx === 'me' || 
+                               cleanTx === 'אני' || 
+                               txt.includes(BOT_NAME);
 
       if (isSelfChatHeader) {
         if (txt !== BOT_NAME) {
@@ -208,18 +209,18 @@
     
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    row.innerHTML = \`
+    row.innerHTML = `
       <div class="sn-bot-bubble-wrapper">
-        <span class="sn-bot-tail">\${TAIL_SVG}</span>
+        <span class="sn-bot-tail">${TAIL_SVG}</span>
         <div class="sn-bot-bubble">
-          <div class="sn-bot-name">\${BOT_NAME}</div>
-          <div class="sn-bot-text">\${html}</div>
+          <div class="sn-bot-name">${BOT_NAME}</div>
+          <div class="sn-bot-text">${html}</div>
           <div class="sn-bot-meta">
-            <span class="sn-bot-time">\${nowStr}</span>
+            <span class="sn-bot-time">${nowStr}</span>
           </div>
         </div>
       </div>
-    \`;
+    `;
 
     // Append to the list of messages container (not just the scroll area)
     const list = chatPane.querySelector('[role="list"]') || chatPane;
@@ -351,13 +352,13 @@
     if (!titleEl) return false;
 
     const title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    const lowerTx = title.toLowerCase();
+    const cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
     
     return title.includes(BOT_NAME) || 
-           lowerTx.includes('(you)') || 
-           lowerTx === 'you' || 
-           lowerTx === 'me' || 
-           lowerTx === 'אני';
+           cleanTx.includes('(you)') || 
+           cleanTx === 'you' || 
+           cleanTx === 'me' || 
+           cleanTx === 'אני';
   }
 
   // ===== Initialize =====

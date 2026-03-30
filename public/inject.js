@@ -48,11 +48,11 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
+    const chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"]');
     chatTitles.forEach(el => {
       const txt = el.textContent || el.getAttribute('title') || '';
-      const lowerTx = txt.toLowerCase();
-      const isSelfChat = lowerTx === 'you' || lowerTx === '(you)' || lowerTx.includes('chat with yourself') || lowerTx === 'me' || lowerTx === 'אני' || txt === BOT_NAME;
+      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      const isSelfChat = cleanTx === 'you' || cleanTx === '(you)' || cleanTx.includes('chat with yourself') || cleanTx === 'me' || cleanTx === 'אני' || txt.includes(BOT_NAME);
 
       if (isSelfChat) {
         if (txt !== BOT_NAME) el.textContent = BOT_NAME;
@@ -69,11 +69,11 @@
       }
     });
 
-    const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
+    const headerTitle = document.querySelector('header span[title], [data-testid="conversation-info-header-chat-title"]');
     if (headerTitle) {
-      const txt = headerTitle.textContent;
-      const lowerTx = txt.toLowerCase();
-      const isSelfChatHeader = lowerTx === 'you' || lowerTx === '(you)' || lowerTx.includes('chat with yourself') || lowerTx === 'me' || lowerTx === 'אני' || txt === BOT_NAME;
+      const txt = headerTitle.textContent || headerTitle.getAttribute('title') || '';
+      const cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      const isSelfChatHeader = cleanTx === 'you' || cleanTx === '(you)' || cleanTx.includes('chat with yourself') || cleanTx === 'me' || cleanTx === 'אני' || txt.includes(BOT_NAME);
 
       if (isSelfChatHeader) {
         if (txt !== BOT_NAME) headerTitle.textContent = BOT_NAME;
@@ -238,13 +238,13 @@
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
 
-      const header = document.querySelector('[data-testid="conversation-header"]') || document.querySelector('header');
+      const header = document.querySelector('header') || document.querySelector('[data-testid="conversation-header"]');
       if (header) {
-        const titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') || header.querySelector('span[title]');
+        const titleEl = header.querySelector('span[title]') || header.querySelector('[data-testid="conversation-info-header-chat-title"]');
         const title = titleEl ? (titleEl.textContent || titleEl.getAttribute('title') || '') : '';
-        const lowerTx = title.toLowerCase();
+        const cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
         
-        if (title.includes(BOT_NAME) || lowerTx.includes('(you)') || lowerTx === 'you' || lowerTx === 'me' || lowerTx === 'אני') {
+        if (title.includes(BOT_NAME) || cleanTx.includes('(you)') || cleanTx === 'you' || cleanTx === 'me' || cleanTx === 'אני') {
             if (!handleCommand(text)) {
                 setTimeout(() => {
                     var category = categorize(text);
