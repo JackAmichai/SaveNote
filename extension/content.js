@@ -314,9 +314,8 @@
     ] : [];
 
     for (const container of msgContainers) {
-      if (!container.getAttribute('data-id')) continue;
-
-      const isOutgoingId = container.getAttribute('data-id').startsWith('true_');
+      const dataId = container.getAttribute('data-id');
+      const isOutgoingId = dataId && dataId.startsWith('true_');
       const isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
       const hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
       
