@@ -2,8 +2,5 @@
   "buildCommand": null,
   "outputDirectory": "public",
   "framework": null,
-  "rewrites": [],
-  "projectSettings": {
-    "framework": null
-  }
+  "rewrites": []
 }
