@@ -478,10 +478,17 @@
       if (e.target === e.currentTarget) closeInstall();
     });
 
-    // Set up bookmarklet href (loads inject.js from our server)
-    const bookmarkletCode = `javascript:void((function(){if(document.getElementById('sn-fab'))return;var s=document.createElement('script');s.src='${window.location.origin}/inject.js?v='+Date.now();document.body.appendChild(s);})())`;
+    // Set up bookmarklet — inline the ENTIRE minified code into the URL
+    // (WhatsApp Web CSP blocks external script loading, but bookmarklet
+    //  code in a javascript: URL always executes as a trusted user action)
     const bmLink = document.getElementById('bookmarklet-link');
-    bmLink.href = bookmarkletCode;
+    fetch('/inject.min.js')
+      .then(r => r.text())
+      .then(code => {
+        bmLink.href = 'javascript:' + encodeURIComponent(code);
+        bmLink.classList.add('ready');
+      });
+
     // Prevent clicking the link on this page (it should only be dragged)
     bmLink.addEventListener('click', (e) => {
       e.preventDefault();
