@@ -61,7 +61,7 @@ async function handleMessage(messageText, chatId) {
         finance: '💰', other: '📌'
       };
       const emoji = categoryEmoji[result.category] || '📌';
-      const confirmation = `${emoji} Got it! Saved under *${result.category}*:\n_"${result.summary}"_`;
+      const confirmation = `${emoji} Got it! Saved under *${result.category}*:\n_"${result.summary}"_\n#${result.category}`;
 
       await whatsapp.sendReply(chatId, confirmation);
       console.log('✅ Confirmation sent to WhatsApp\n');

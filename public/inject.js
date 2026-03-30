@@ -74,6 +74,7 @@
     .sn-foot{padding:8px 12px;text-align:center;font-size:10px;color:#8696a0;border-top:1px solid #e9edef;flex-shrink:0}
     .sn-toast{position:fixed;bottom:80px;left:20px;background:#111b21;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:100000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.15)}
     .sn-toast.show{opacity:1;transform:translateY(0)}
+    .sn-hash-pill{display:inline-block;font-size:11px;font-weight:600;text-transform:none;padding:2px 7px;border-radius:10px;background:rgba(0,128,105,.08);color:#008069;margin:0 4px;vertical-align:middle;user-select:all;pointer-events:auto}
   `;
   document.head.appendChild(css);
 
@@ -205,4 +206,44 @@
   };
 
   showToast('📝 SaveNote ready! Click the button to open.');
+
+  // ===== WhatsApp UI Enhancer =====
+  // Transforms "#category" into a beautiful pill inside WhatsApp chat bubbles
+  function styleTags() {
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    var n;
+    while(n = walker.nextNode()) {
+      if (n.nodeValue && n.nodeValue.includes('#') && n.parentNode && n.parentNode.nodeName === 'SPAN' && !n.parentNode.classList.contains('sn-hash-pill')) {
+        if (n.parentNode.closest('.message-in') || n.parentNode.closest('.message-out')) {
+          nodes.push(n);
+        }
+      }
+    }
+    nodes.forEach(function(node) {
+      var text = node.nodeValue;
+      var match = text.match(/(#[a-zA-Z0-9]+)/);
+      if (match) {
+        var span = document.createElement('span');
+        var parts = text.split(match[1]);
+        if (parts[0]) span.appendChild(document.createTextNode(parts[0]));
+        var pill = document.createElement('span');
+        pill.className = 'sn-hash-pill';
+        pill.textContent = match[1].substring(1); // remove # for cleaner look
+        span.appendChild(pill);
+        if (parts[1]) span.appendChild(document.createTextNode(parts[1]));
+        if (node.parentNode) {
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+    });
+  }
+
+  // Monitor DOM for new messages to style
+  new MutationObserver(function() {
+    styleTags();
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  
+  // Style existing ones on load
+  setTimeout(styleTags, 500);
 })();
