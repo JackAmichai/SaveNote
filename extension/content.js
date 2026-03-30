@@ -311,22 +311,25 @@
 
   function processNewElements(el) {
     const msgContainers = el.querySelectorAll ? [
-      ...el.querySelectorAll('[data-testid="msg-container"]'),
-      ...(el.matches && el.matches('[data-testid="msg-container"]') ? [el] : []),
+      ...el.querySelectorAll('[data-testid="msg-container"], div[data-id]'),
+      ...(el.matches && el.matches('[data-testid="msg-container"], div[data-id]') ? [el] : []),
     ] : [];
 
     for (const container of msgContainers) {
-      const isOutgoing = container.querySelector('[data-testid="msg-dblcheck"]') ||
-                         container.querySelector('[data-testid="msg-check"]') ||
-                         container.classList.contains('message-out');
+      if (!container.getAttribute('data-id')) continue;
+
+      const isOutgoingId = container.getAttribute('data-id').startsWith('true_');
+      const isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
+      const hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
+      
+      const isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
 
       if (!isOutgoing) continue;
 
-      const textEl = container.querySelector('.selectable-text span') ||
-                     container.querySelector('[data-testid="msg-text"] span');
-      if (!textEl) continue;
+      const textWrapper = container.querySelector('.copyable-text[data-pre-plain-text]') || container.querySelector('.selectable-text');
+      if (!textWrapper) continue;
 
-      const text = textEl.textContent.trim();
+      const text = textWrapper.textContent.trim();
       if (!text || text.length < 2) continue;
 
       if (lastProcessedMessages.has(text)) continue;
