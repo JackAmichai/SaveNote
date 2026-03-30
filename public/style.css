@@ -1429,13 +1429,13 @@ img {
 
 /* ===== Install Guide Modal ===== */
 .install-modal {
-  max-width: 560px;
+  max-width: 520px;
 }
 
 .install-steps {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .install-step {
@@ -1477,43 +1477,55 @@ img {
   margin-bottom: 12px;
 }
 
-.install-substeps {
-  list-style: none;
-  counter-reset: substep;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0;
-}
-
-.install-substeps li {
-  display: flex;
+/* Bookmarklet Drag Button */
+.bookmarklet-btn {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  padding: 8px 12px;
-  background: #f5f5f5;
-  border-radius: var(--radius-xs);
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--wa-teal) 0%, var(--wa-green) 100%);
+  color: white;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: grab;
+  box-shadow: 0 4px 16px var(--wa-green-glow);
+  transition: all 0.2s;
+  animation: bookmarklet-pulse 2s ease-in-out infinite;
+  user-select: none;
+}
+
+.bookmarklet-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 24px rgba(0, 128, 105, 0.4);
+}
+
+.bookmarklet-btn:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+@keyframes bookmarklet-pulse {
+  0%, 100% { box-shadow: 0 4px 16px var(--wa-green-glow); }
+  50% { box-shadow: 0 4px 24px rgba(37, 211, 102, 0.5); }
+}
+
+/* Install hint */
+.install-hint {
+  font-size: 0.8rem !important;
+  color: var(--text-tertiary) !important;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+}
+
+.install-hint kbd {
+  padding: 1px 6px;
+  background: #f0f2f5;
   border: 1px solid var(--border);
-}
-
-.install-substeps li strong {
-  color: var(--text-primary);
-}
-
-.copy-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 2px 6px;
   border-radius: 4px;
-  transition: background 0.15s;
-}
-
-.copy-btn:hover {
-  background: rgba(0, 128, 105, 0.1);
+  font-family: inherit;
+  font-size: 0.78rem;
 }
 
 /* ===== WhatsApp Simulator FAB ===== */
