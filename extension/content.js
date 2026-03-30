@@ -96,7 +96,16 @@
     const chatTitles = document.querySelectorAll('[data-testid="contact-name"], [data-testid="cell-frame-container"] span[title]');
     chatTitles.forEach(el => {
       const txt = el.textContent || el.getAttribute('title') || '';
-      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt === BOT_NAME) {
+      const lowerTx = txt.toLowerCase();
+      
+      const isSelfChat = lowerTx === 'you' || 
+                         lowerTx === '(you)' || 
+                         lowerTx.includes('chat with yourself') || 
+                         lowerTx === 'me' || 
+                         lowerTx === 'אני' || 
+                         txt === BOT_NAME;
+
+      if (isSelfChat) {
         if (txt !== BOT_NAME) {
           el.textContent = BOT_NAME;
         }
@@ -121,7 +130,15 @@
     const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]');
     if (headerTitle) {
       const txt = headerTitle.textContent;
-      if (txt === 'You' || txt === '(You)' || txt === 'Chat with yourself' || txt === BOT_NAME) {
+      const lowerTx = txt.toLowerCase();
+      const isSelfChatHeader = lowerTx === 'you' || 
+                               lowerTx === '(you)' || 
+                               lowerTx.includes('chat with yourself') || 
+                               lowerTx === 'me' || 
+                               lowerTx === 'אני' || 
+                               txt === BOT_NAME;
+
+      if (isSelfChatHeader) {
         if (txt !== BOT_NAME) {
             headerTitle.textContent = BOT_NAME;
         }
@@ -334,7 +351,13 @@
     if (!titleEl) return false;
 
     const title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    return title.includes(BOT_NAME) || title.includes('(You)') || title.includes('You');
+    const lowerTx = title.toLowerCase();
+    
+    return title.includes(BOT_NAME) || 
+           lowerTx.includes('(you)') || 
+           lowerTx === 'you' || 
+           lowerTx === 'me' || 
+           lowerTx === 'אני';
   }
 
   // ===== Initialize =====
