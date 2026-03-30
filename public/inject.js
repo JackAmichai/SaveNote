@@ -75,6 +75,11 @@
     .sn-toast{position:fixed;bottom:80px;left:20px;background:#111b21;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:100000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.15)}
     .sn-toast.show{opacity:1;transform:translateY(0)}
     .sn-hash-pill{display:inline-block;font-size:11px;font-weight:600;text-transform:none;padding:2px 7px;border-radius:10px;background:rgba(0,128,105,.08);color:#008069;margin:0 4px;vertical-align:middle;user-select:all;pointer-events:auto}
+    .sn-ai-btn{border:0;background:0;cursor:pointer;font-size:16px;opacity:0.7;transition:opacity .15s;padding:4px}
+    .sn-ai-btn:hover{opacity:1}
+    .sn-ai-ans{background:linear-gradient(to right, rgba(0,128,105,0.05), rgba(37,211,102,0.05));border:1px solid rgba(0,128,105,0.2);border-radius:8px;padding:12px;margin:6px;font-size:13px;line-height:1.4;color:#111b21}
+    .sn-ai-ans-label{font-size:10px;font-weight:700;color:#008069;margin-bottom:6px;display:flex;align-items:center;gap:4px;text-transform:uppercase}
+    .sn-ai-ans-label span{font-size:13px}
   `;
   document.head.appendChild(css);
 
@@ -94,8 +99,13 @@
         <button id="sn-close" title="Close">✕</button>
       </div>
     </div>
-    <div class="sn-search"><span>🔍</span><input id="sn-q" placeholder="Search notes..." autocomplete="off"></div>
+    <div class="sn-search">
+      <span>🔍</span>
+      <input id="sn-q" placeholder="Search notes or ask AI..." autocomplete="off">
+      <button id="sn-ask-ai" class="sn-ai-btn" title="Ask AI about your notes">✨</button>
+    </div>
     <div class="sn-filters" id="sn-filters"></div>
+    <div id="sn-ai-zone"></div>
     <div class="sn-list" id="sn-list"></div>
     <div class="sn-add" id="sn-add" style="display:none">
       <textarea id="sn-input" placeholder="Type something to remember..." rows="2"></textarea>
@@ -144,6 +154,39 @@
     render();
   }
 
+  function askOllama(q) {
+    if (!q.trim()) return;
+    var notes = loadNotes();
+    if (notes.length === 0) {
+      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>⚠️</span> Error</div>You have no notes for me to analyze.</div>';
+      return;
+    }
+    document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Thinking...</div>...</div>';
+
+    var notesText = notes.map(function(n, i){
+        return i + ". [" + n.category + "] " + n.summary;
+    }).join('\\n');
+
+    var prompt = "You are a helpful memory assistant. Based ONLY on the user's notes below, answer their question concisely. Do NOT make up information. If the answer is not in the notes, say so.\\n\\nNOTES:\\n" + notesText + "\\n\\nQUESTION: " + q;
+
+    fetch('http://127.0.0.1:11434/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'llama3',
+        prompt: prompt,
+        stream: false
+      })
+    }).then(function(res){
+      if (!res.ok) throw new Error('API Error');
+      return res.json();
+    }).then(function(data){
+      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>✨</span> AI Answer</div>'+esc(data.response).replace(/\\n/g,'<br>')+'</div>';
+    }).catch(function(e){
+      document.getElementById('sn-ai-zone').innerHTML = '<div class="sn-ai-ans"><div class="sn-ai-ans-label"><span>❌</span> Connection Failed</div>Make sure Ollama is running locally with Cross-Origin enabled:<br><code>OLLAMA_ORIGINS="*" ollama serve</code></div>';
+    });
+  }
+
   function render() {
     var notes = loadNotes();
     var fl = filter, q = query.toLowerCase();
@@ -185,7 +228,20 @@
   // ===== Events =====
   fab.onclick = toggle;
   document.getElementById('sn-close').onclick = toggle;
-  document.getElementById('sn-q').oninput = function(e){query = e.target.value; render();};
+  document.getElementById('sn-q').oninput = function(e){
+    query = e.target.value;
+    document.getElementById('sn-ai-zone').innerHTML = ''; // clear AI answer when typing
+    render();
+  };
+  document.getElementById('sn-ask-ai').onclick = function(){
+    askOllama(document.getElementById('sn-q').value);
+  };
+  document.getElementById('sn-q').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      askOllama(e.target.value);
+    }
+  });
   document.getElementById('sn-add-btn').onclick = function(){
     var a = document.getElementById('sn-add');
     a.style.display = a.style.display === 'none' ? 'flex' : 'none';
