@@ -86,6 +86,23 @@
     return 'other';
   }
 
+  // ===== Self-Chat Detection Helper =====
+  function isSelfChatTitle(cleanText) {
+    return cleanText === 'you' ||
+           cleanText === '(you)' ||
+           cleanText === 'me' ||
+           cleanText === 'yourself' ||
+           cleanText === 'אני' ||
+           cleanText.includes('(you)') ||
+           cleanText.includes('(את)') ||
+           cleanText.includes('(אני)') ||
+           cleanText.includes('(אתה)') ||
+           cleanText.includes('chat with yourself') ||
+           cleanText.includes('notes to self') ||
+           cleanText.endsWith(' you') ||
+           /\(you\)\s*$/.test(cleanText);
+  }
+
   // ===== UI: Bot Identity Hijacker =====
   function hijackIdentity() {
     // Determine Theme
@@ -99,23 +116,21 @@
     // 1. Rename 'You' in sidebar and header
     var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"]');
     chatTitles.forEach(function(el) {
-      var txt = el.textContent || el.getAttribute('title') || '';
+      var txt = el.textContent || '';
+      var titleAttr = el.getAttribute('title') || '';
       // Strip WhatsApp's invisible Bi-Di formatting characters (LRM, RLM) and trim
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
-      var isSelfChat = cleanTx === 'you' || 
-                         cleanTx === '(you)' || 
-                         cleanTx.includes('chat with yourself') || 
-                         cleanTx === 'me' || 
-                         cleanTx === 'אני' || 
-                         cleanTx === 'yourself' ||
-                         txt.includes(BOT_NAME);
+      var isSelfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
 
       if (isSelfChat) {
         if (txt !== BOT_NAME) {
           el.textContent = BOT_NAME;
         }
-        el.className += ' sn-sidebar-identity';
+        if (!el.classList.contains('sn-sidebar-identity')) {
+          el.classList.add('sn-sidebar-identity');
+        }
         
         // Try to replace avatar in sidebar or header
         var parent = el.closest('[data-testid="cell-frame-container"]') || el.closest('header');
@@ -355,39 +370,72 @@
     var main = document.querySelector('#main');
     var header = (main && main.querySelector('header')) || 
                  document.querySelector('[data-testid="conversation-header"]') || 
-                 document.querySelector('header[role="banner"]') ||
-                 document.querySelector('header');
+                 document.querySelector('header[role="banner"]');
     
     if (!header) {
         console.log('🤖 [SaveNote] Header not found in main pane.');
         return false;
     }
 
+    // Strategy 1: Check specific title elements
     var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
                     header.querySelector('span[title]') ||
-                    header.querySelector('[data-testid="contact-name"]') ||
-                    header.querySelector('[dir="auto"]');
+                    header.querySelector('[data-testid="contact-name"]');
     
-    if (!titleEl) {
-        console.log('🤖 [SaveNote] Chat title element not found in header.');
-        return false;
+    if (titleEl) {
+        var title = titleEl.textContent || '';
+        var titleAttr = titleEl.getAttribute('title') || '';
+        var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var cleanAttr = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        
+        console.log('🤖 [SaveNote] Chat title text:', JSON.stringify(title), 'attr:', JSON.stringify(titleAttr));
+
+        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) {
+            return true;
+        }
     }
 
-    var title = titleEl.textContent || titleEl.getAttribute('title') || '';
-    var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-    
-    console.log('🤖 [SaveNote] Current chat title:', title, '(' + cleanTx + ')');
+    // Strategy 2: Scan ALL spans in the header for self-chat indicators
+    var allSpans = header.querySelectorAll('span');
+    for (var i = 0; i < allSpans.length; i++) {
+        var spanText = (allSpans[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var spanTitle = (allSpans[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (isSelfChatTitle(spanText) || isSelfChatTitle(spanTitle)) {
+            console.log('🤖 [SaveNote] Self-chat detected via header span scan:', allSpans[i].textContent);
+            return true;
+        }
+        // Check if any span contains the BOT_NAME (already hijacked)
+        if ((allSpans[i].textContent || '').includes(BOT_NAME)) {
+            return true;
+        }
+    }
 
-    var isSelf = title.includes(BOT_NAME) || 
-                   cleanTx.includes('(you)') || 
-                   cleanTx.includes('chat with yourself') ||
-                   cleanTx === 'you' || 
-                   cleanTx === 'me' || 
-                   cleanTx === 'אני' ||
-                   cleanTx === 'yourself' ||
-                   cleanTx.includes('notes to self');
-    
-    return isSelf;
+    // Strategy 3: Check the full header text as a last resort
+    var headerText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    console.log('🤖 [SaveNote] Full header text:', JSON.stringify(headerText));
+    if (isSelfChatTitle(headerText) || headerText.includes(BOT_NAME.toLowerCase())) {
+        console.log('🤖 [SaveNote] Self-chat detected via full header text.');
+        return true;
+    }
+
+    // Strategy 4: Check if the hijacker has already marked a sidebar identity for this chat
+    var sidebarIdentities = document.querySelectorAll('.sn-sidebar-identity');
+    if (sidebarIdentities.length > 0) {
+        // Check if any sidebar identity element is highlighted/active (current chat)
+        for (var j = 0; j < sidebarIdentities.length; j++) {
+            var cell = sidebarIdentities[j].closest('[data-testid="cell-frame-container"]');
+            if (cell) {
+                var listItem = cell.closest('[aria-selected="true"], [data-testid="chat-list-item"]');
+                if (listItem && listItem.getAttribute('aria-selected') === 'true') {
+                    console.log('🤖 [SaveNote] Self-chat detected via active sidebar identity.');
+                    return true;
+                }
+            }
+        }
+    }
+
+    console.log('🤖 [SaveNote] Not a self-chat. No indicators found.');
+    return false;
   }
 
   // ===== Initialize =====

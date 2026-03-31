@@ -33,6 +33,23 @@
   var BOT_NAME = 'SaveNote AI';
   var BOT_COLOR = '#008069';
   var lastProcessedMessages = new Set();
+
+  // Self-chat detection helper
+  function isSelfChatTitle(cleanText) {
+    return cleanText === 'you' ||
+           cleanText === '(you)' ||
+           cleanText === 'me' ||
+           cleanText === 'yourself' ||
+           cleanText === 'אני' ||
+           cleanText.includes('(you)') ||
+           cleanText.includes('(את)') ||
+           cleanText.includes('(אני)') ||
+           cleanText.includes('(אתה)') ||
+           cleanText.includes('chat with yourself') ||
+           cleanText.includes('notes to self') ||
+           cleanText.endsWith(' you') ||
+           /\(you\)\s*$/.test(cleanText);
+  }
   
   function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
   function loadNotes(){try{return JSON.parse(localStorage.getItem('savenote_data'))||[];}catch(e){return [];}}
@@ -54,13 +71,17 @@
 
     var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"]');
     chatTitles.forEach(function(el) {
-      var txt = el.textContent || el.getAttribute('title') || '';
+      var txt = el.textContent || '';
+      var titleAttr = el.getAttribute('title') || '';
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-      var isSelfChat = cleanTx === 'you' || cleanTx === '(you)' || cleanTx.includes('chat with yourself') || cleanTx === 'me' || cleanTx === 'אני' || cleanTx === 'yourself' || txt.includes(BOT_NAME);
+      var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
 
-      if (isSelfChat) {
+      if (selfChat) {
         if (txt !== BOT_NAME) el.textContent = BOT_NAME;
-        el.className += ' sn-sidebar-identity';
+        if (!el.classList.contains('sn-sidebar-identity')) {
+          el.classList.add('sn-sidebar-identity');
+        }
         var parent = el.closest('[data-testid="cell-frame-container"]') || el.closest('header');
         if (parent) {
           var avatarContainer = parent.querySelector('[data-testid="avatar-img-container"]');
@@ -258,65 +279,105 @@
       lastProcessedMessages.add(text);
       console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
-      var main = document.querySelector('#main');
-      var header = (main && main.querySelector('header')) || 
-                   document.querySelector('header') || 
-                   document.querySelector('[data-testid="conversation-header"]');
-      
-      if (header) {
-        var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
-                        header.querySelector('span[title]') || 
-                        header.querySelector('[data-testid="contact-name"]') ||
-                        header.querySelector('[dir="auto"]');
-        
-        if (!titleEl) {
-            console.log('🤖 [SaveNote] Chat title element not found in header.');
-            continue;
-        }
+      var isSelf = checkSelfChatSync();
 
-        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
-        var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        
-        console.log('🤖 [SaveNote] Current chat title:', title, '(' + cleanTx + ')');
-
-        var isSelf = title.includes(BOT_NAME) || 
-                       cleanTx.includes('(you)') || 
-                       cleanTx.includes('chat with yourself') ||
-                       cleanTx === 'you' || 
-                       cleanTx === 'me' || 
-                       cleanTx === 'אני' ||
-                       cleanTx === 'yourself' ||
-                       cleanTx.includes('notes to self');
-
-        if (isSelf) {
-            console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
-            if (!handleCommand(text)) {
-                (function(t) {
-                    setTimeout(function() {
-                        var cat = categorize(t);
-                        var notesArr = loadNotes();
-                        notesArr.unshift({
-                            id: Date.now(),
-                            category: cat,
-                            summary: t.length > 120 ? t.substring(0, 117) + '...' : t,
-                            raw_message: t,
-                            created_at: new Date().toISOString()
-                        });
-                        saveNotes(notesArr);
-                        simulateTyping();
-                        setTimeout(function() {
-                            injectBotReply(`✅ Got it! Saved under <strong>${cat}</strong> ${CATEGORY_EMOJI[cat]}<br><small>"${t}"</small>`);
-                        }, 1500);
-                    }, 200);
-                })(text);
-            }
-        } else {
-            console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
-        }
+      if (isSelf) {
+          console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
+          if (!handleCommand(text)) {
+              (function(t) {
+                  setTimeout(function() {
+                      var cat = categorize(t);
+                      var notesArr = loadNotes();
+                      notesArr.unshift({
+                          id: Date.now(),
+                          category: cat,
+                          summary: t.length > 120 ? t.substring(0, 117) + '...' : t,
+                          raw_message: t,
+                          created_at: new Date().toISOString()
+                      });
+                      saveNotes(notesArr);
+                      simulateTyping();
+                      setTimeout(function() {
+                          injectBotReply(`✅ Got it! Saved under <strong>${cat}</strong> ${CATEGORY_EMOJI[cat]}<br><small>"${t}"</small>`);
+                      }, 1500);
+                  }, 200);
+              })(text);
+          }
       } else {
-          console.log('🤖 [SaveNote] Conversation header not found.');
+          console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
       }
     }
+  }
+
+  // ===== Self-Chat Sync Check =====
+  function checkSelfChatSync() {
+    var main = document.querySelector('#main');
+    var header = (main && main.querySelector('header')) || 
+                 document.querySelector('[data-testid="conversation-header"]') || 
+                 document.querySelector('header[role="banner"]');
+    
+    if (!header) {
+        console.log('🤖 [SaveNote] Header not found.');
+        return false;
+    }
+
+    // Strategy 1: Check specific title elements
+    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
+                    header.querySelector('span[title]') ||
+                    header.querySelector('[data-testid="contact-name"]');
+    
+    if (titleEl) {
+        var title = titleEl.textContent || '';
+        var titleAttr = titleEl.getAttribute('title') || '';
+        var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var cleanAttr = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        
+        console.log('🤖 [SaveNote] Chat title text:', JSON.stringify(title), 'attr:', JSON.stringify(titleAttr));
+
+        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) {
+            return true;
+        }
+    }
+
+    // Strategy 2: Scan ALL spans in header for self-chat indicators
+    var allSpans = header.querySelectorAll('span');
+    for (var i = 0; i < allSpans.length; i++) {
+        var spanText = (allSpans[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var spanTitle = (allSpans[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (isSelfChatTitle(spanText) || isSelfChatTitle(spanTitle)) {
+            console.log('🤖 [SaveNote] Self-chat detected via header span:', allSpans[i].textContent);
+            return true;
+        }
+        if ((allSpans[i].textContent || '').includes(BOT_NAME)) {
+            return true;
+        }
+    }
+
+    // Strategy 3: Check full header text
+    var headerText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    console.log('🤖 [SaveNote] Full header text:', JSON.stringify(headerText));
+    if (isSelfChatTitle(headerText) || headerText.includes(BOT_NAME.toLowerCase())) {
+        console.log('🤖 [SaveNote] Self-chat detected via full header text.');
+        return true;
+    }
+
+    // Strategy 4: Check sidebar identity markers
+    var sidebarIdentities = document.querySelectorAll('.sn-sidebar-identity');
+    if (sidebarIdentities.length > 0) {
+        for (var j = 0; j < sidebarIdentities.length; j++) {
+            var cell = sidebarIdentities[j].closest('[data-testid="cell-frame-container"]');
+            if (cell) {
+                var listItem = cell.closest('[aria-selected="true"], [data-testid="chat-list-item"]');
+                if (listItem && listItem.getAttribute('aria-selected') === 'true') {
+                    console.log('🤖 [SaveNote] Self-chat detected via active sidebar identity.');
+                    return true;
+                }
+            }
+        }
+    }
+
+    console.log('🤖 [SaveNote] Not a self-chat. No indicators found.');
+    return false;
   }
 
   // ===== Init =====
