@@ -183,12 +183,15 @@
       });
   }
 
+  // ===== Bot Reply Injection =====
   function injectBotReply(html) {
-    var chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
+    // Find the scrollable message container
+    var chatPane = document.querySelector('div[role="region"][aria-label="Message list"]') || 
+                   document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
                    document.querySelector('#main .copyable-area [role="application"]') ||
                    document.querySelector('#main .copyable-area');
-    
+
     if (!chatPane) {
         console.log('🤖 [SaveNote] Chat pane not found for reply injection.');
         return;
@@ -238,10 +241,11 @@
     bubble.appendChild(text);
     bubble.appendChild(meta);
     wrapper.appendChild(tail);
-    wrapper.appendChild(bubble);
-    row.appendChild(wrapper);
-
+    // Find the best insertion point - the list container inside the chat pane
     var list = chatPane.querySelector('[role="list"]') || chatPane;
+    if (list === chatPane && chatPane.firstElementChild) {
+        list = chatPane.firstElementChild; // Usually the actual flex container
+    }
     list.appendChild(row);
 
     console.log('🤖 [SaveNote] Bot reply injected successfully.');
@@ -333,10 +337,8 @@
       }
     });
 
-    var app = document.querySelector('#app') || document.body;
-    if (app) {
-      observer.observe(app, { childList: true, subtree: true });
-    }
+    // Use document.body to ensure we never detach during React re-renders
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   function processNewElements(el) {
@@ -365,9 +367,12 @@
       var textWrapper = container.querySelector('.selectable-text span') || 
                           container.querySelector('.selectable-text') ||
                           container.querySelector('.copyable-text[data-pre-plain-text]') ||
-                          container.querySelector('span.copyable-text');
+                          container.querySelector('span.copyable-text') ||
+                          container.querySelector('.copyable-text');
       
-      if (!textWrapper) continue;
+      if (!textWrapper) {
+          textWrapper = container; // Ultimate fallback: just strip everything else
+      }
 
       // Extract text and try to exclude timestamp
       var text = "";
@@ -376,8 +381,10 @@
       } else {
           // Clone to avoid modifying DOM, then remove metadata if present
           var clone = textWrapper.cloneNode(true);
-          var meta = clone.querySelector('[data-testid="msg-meta"], .metadata, .copyable-text');
-          if (meta) meta.remove();
+          var metas = clone.querySelectorAll('[data-testid="msg-meta"], .metadata, .copyable-text:not(.selectable-text), span[dir="auto"]:last-child');
+          for (var k = 0; k < metas.length; k++) {
+              metas[k].remove();
+          }
           text = clone.textContent;
       }
       
