@@ -184,42 +184,81 @@
   }
 
   function injectBotReply(html) {
-    // 1. Try finding the scrollable message list inside the new WhatsApp layout
     var chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
-                   document.querySelector('.copyable-area [role="application"]') ||
-                   document.querySelector('#main .copyable-area') ||
-                   document.querySelector('#main [role="application"]');
+                   document.querySelector('#main .copyable-area [role="application"]') ||
+                   document.querySelector('#main .copyable-area');
     
-    // Fallback if completely undetected
-    if (!chatPane) return;
+    if (!chatPane) {
+        console.log('🤖 [SaveNote] Chat pane not found for reply injection.');
+        return;
+    }
+
+    var isDark = document.body.className.includes('dark') || 
+                 document.body.getAttribute('data-theme') === 'dark';
+
+    var bubbleBg = isDark ? '#202c33' : '#ffffff';
+    var bubbleColor = isDark ? '#e9edef' : '#111b21';
+    var nameColor = isDark ? '#00a884' : '#008069';
+    var timeColor = isDark ? '#8696a0' : '#667781';
+    var tailColor = isDark ? '#202c33' : '#ffffff';
+
+    var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     var row = document.createElement('div');
-    row.className = 'sn-bot-msg-row';
-    
-    var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    row.innerHTML = `
-      <div class="sn-bot-bubble-wrapper">
-        <span class="sn-bot-tail">${TAIL_SVG}</span>
-        <div class="sn-bot-bubble">
-          <div class="sn-bot-name">${BOT_NAME}</div>
-          <div class="sn-bot-text">${html}</div>
-          <div class="sn-bot-meta">
-            <span class="sn-bot-time">${nowStr}</span>
-          </div>
-        </div>
-      </div>
-    `;
+    row.setAttribute('style', 'display:flex !important;flex-direction:column !important;width:100% !important;margin-bottom:2px !important;align-items:flex-start !important;');
 
-    // Append to the list of messages container (not just the scroll area)
+    var wrapper = document.createElement('div');
+    wrapper.setAttribute('style', 'position:relative !important;display:flex !important;max-width:65% !important;margin-left:63px !important;margin-bottom:8px !important;margin-top:8px !important;');
+
+    var tail = document.createElement('span');
+    tail.setAttribute('style', 'position:absolute !important;top:0 !important;left:-8px !important;width:8px !important;height:13px !important;color:' + tailColor + ' !important;z-index:100 !important;display:block !important;');
+    tail.innerHTML = TAIL_SVG;
+
+    var bubble = document.createElement('div');
+    bubble.setAttribute('style', 'background-color:' + bubbleBg + ' !important;border-radius:0 7.5px 7.5px 7.5px !important;padding:6px 7px 8px 9px !important;box-shadow:0 1px 0.5px rgba(11,20,26,0.13) !important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:flex !important;flex-direction:column !important;min-width:120px !important;max-width:100% !important;');
+
+    var name = document.createElement('div');
+    name.setAttribute('style', 'font-size:12.8px !important;font-weight:500 !important;color:' + nameColor + ' !important;margin-bottom:2px !important;line-height:22px !important;display:block !important;');
+    name.textContent = BOT_NAME;
+
+    var text = document.createElement('div');
+    text.setAttribute('style', 'word-break:break-word !important;white-space:pre-wrap !important;margin-bottom:4px !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:block !important;');
+    text.innerHTML = html;
+
+    var meta = document.createElement('div');
+    meta.setAttribute('style', 'display:flex !important;justify-content:flex-end !important;align-items:center !important;float:right !important;margin-left:14px !important;');
+
+    var time = document.createElement('span');
+    time.setAttribute('style', 'font-size:11px !important;color:' + timeColor + ' !important;margin-top:3px !important;display:inline !important;');
+    time.textContent = nowStr;
+
+    meta.appendChild(time);
+    bubble.appendChild(name);
+    bubble.appendChild(text);
+    bubble.appendChild(meta);
+    wrapper.appendChild(tail);
+    wrapper.appendChild(bubble);
+    row.appendChild(wrapper);
+
     var list = chatPane.querySelector('[role="list"]') || chatPane;
     list.appendChild(row);
-    
-    // Scroll to bottom
+
+    console.log('🤖 [SaveNote] Bot reply injected successfully.');
+
     setTimeout(function() {
-      chatPane.scrollTop = chatPane.scrollHeight + 500;
-    }, 100);
+      var scrollContainer = chatPane;
+      var el = chatPane;
+      for (var i = 0; i < 5; i++) {
+        if (el && el.scrollHeight > el.clientHeight) {
+          scrollContainer = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+      scrollContainer.scrollTop = scrollContainer.scrollHeight + 1000;
+      chatPane.scrollTop = chatPane.scrollHeight + 1000;
+    }, 150);
   }
 
   // ===== Command Handler =====

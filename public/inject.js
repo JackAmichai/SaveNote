@@ -130,60 +130,89 @@
 
   // ===== Bot Reply Injection =====
   function injectBotReply(html) {
+    // Find the scrollable message container
     var chatPane = document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
-                   document.querySelector('.copyable-area [role="application"]') ||
-                   document.querySelector('#main .copyable-area') ||
-                   document.querySelector('#main [role="application"]');
+                   document.querySelector('#main .copyable-area [role="application"]') ||
+                   document.querySelector('#main .copyable-area');
                    
-    if (!chatPane) return;
-
-    if (!document.getElementById('sn-bot-css')) {
-        var style = document.createElement('style');
-        style.id = 'sn-bot-css';
-        style.textContent = `
-            .sn-bot-msg-row { display: flex; flex-direction: column; width: 100%; margin-bottom: 2px; align-items: flex-start; animation: sn-fade-in 0.2s ease-out; }
-            @keyframes sn-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-            .sn-bot-bubble-wrapper { position: relative; display: flex; max-width: 65%; margin-left: 9px; margin-bottom: 8px; margin-top: 8px; }
-            .sn-bot-tail { position: absolute; top: 0; left: -8px; width: 8px; height: 13px; color: #ffffff; z-index: 100; }
-            [data-theme="dark"] .sn-bot-tail { color: #202c33; }
-            .sn-bot-bubble { background-color: #ffffff; border-radius: 0 7.5px 7.5px 7.5px; padding: 6px 7px 8px 9px; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111b21; font-size: 14.2px; line-height: 19px; display: flex; flex-direction: column; min-width: 120px; }
-            [data-theme="dark"] .sn-bot-bubble { background-color: #202c33; color: #e9edef; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); }
-            .sn-bot-name { font-size: 12.8px; font-weight: 500; color: #008069; margin-bottom: 2px; line-height: 22px; }
-            [data-theme="dark"] .sn-bot-name { color: #00a884; }
-            .sn-bot-text { word-break: break-word; white-space: pre-wrap; margin-bottom: 4px; }
-            .sn-bot-meta { display: flex; justify-content: flex-end; align-items: center; margin-top: -10px; float: right; margin-left: 14px; }
-            .sn-bot-time { font-size: 11px; color: #667781; margin-top: 10px; }
-            [data-theme="dark"] .sn-bot-time { color: #8696a0; }
-            .sn-sidebar-identity { color: #008069 !important; font-weight: 500 !important; }
-            [data-theme="dark"] .sn-sidebar-identity { color: #00a884 !important; }
-            .sn-typing-text { color: #008069 !important; font-size: 13px !important; font-weight: 400 !important; font-family: inherit; }
-            [data-theme="dark"] .sn-typing-text { color: #00a884 !important; }
-        `;
-        document.head.appendChild(style);
+    if (!chatPane) {
+        console.log('🤖 [SaveNote] Chat pane not found for reply injection.');
+        return;
     }
 
-    var row = document.createElement('div');
-    row.className = 'sn-bot-msg-row';
-    var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    row.innerHTML = `
-      <div class="sn-bot-bubble-wrapper">
-        <span class="sn-bot-tail">${TAIL_SVG}</span>
-        <div class="sn-bot-bubble">
-          <div class="sn-bot-name">${BOT_NAME}</div>
-          <div class="sn-bot-text">${html}</div>
-          <div class="sn-bot-meta">
-            <span class="sn-bot-time">${nowStr}</span>
-          </div>
-        </div>
-      </div>
-    `;
+    // Detect dark mode
+    var isDark = document.body.className.includes('dark') || 
+                 document.body.getAttribute('data-theme') === 'dark';
 
+    var bubbleBg = isDark ? '#202c33' : '#ffffff';
+    var bubbleColor = isDark ? '#e9edef' : '#111b21';
+    var nameColor = isDark ? '#00a884' : '#008069';
+    var timeColor = isDark ? '#8696a0' : '#667781';
+    var tailColor = isDark ? '#202c33' : '#ffffff';
+
+    var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Build the reply using fully inline styles (CSP-proof)
+    var row = document.createElement('div');
+    row.setAttribute('style', 'display:flex !important;flex-direction:column !important;width:100% !important;margin-bottom:2px !important;align-items:flex-start !important;');
+
+    var wrapper = document.createElement('div');
+    wrapper.setAttribute('style', 'position:relative !important;display:flex !important;max-width:65% !important;margin-left:63px !important;margin-bottom:8px !important;margin-top:8px !important;');
+
+    var tail = document.createElement('span');
+    tail.setAttribute('style', 'position:absolute !important;top:0 !important;left:-8px !important;width:8px !important;height:13px !important;color:' + tailColor + ' !important;z-index:100 !important;display:block !important;');
+    tail.innerHTML = TAIL_SVG;
+
+    var bubble = document.createElement('div');
+    bubble.setAttribute('style', 'background-color:' + bubbleBg + ' !important;border-radius:0 7.5px 7.5px 7.5px !important;padding:6px 7px 8px 9px !important;box-shadow:0 1px 0.5px rgba(11,20,26,0.13) !important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:flex !important;flex-direction:column !important;min-width:120px !important;max-width:100% !important;');
+
+    var name = document.createElement('div');
+    name.setAttribute('style', 'font-size:12.8px !important;font-weight:500 !important;color:' + nameColor + ' !important;margin-bottom:2px !important;line-height:22px !important;display:block !important;');
+    name.textContent = BOT_NAME;
+
+    var text = document.createElement('div');
+    text.setAttribute('style', 'word-break:break-word !important;white-space:pre-wrap !important;margin-bottom:4px !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:block !important;');
+    text.innerHTML = html;
+
+    var meta = document.createElement('div');
+    meta.setAttribute('style', 'display:flex !important;justify-content:flex-end !important;align-items:center !important;float:right !important;margin-left:14px !important;');
+
+    var time = document.createElement('span');
+    time.setAttribute('style', 'font-size:11px !important;color:' + timeColor + ' !important;margin-top:3px !important;display:inline !important;');
+    time.textContent = nowStr;
+
+    meta.appendChild(time);
+    bubble.appendChild(name);
+    bubble.appendChild(text);
+    bubble.appendChild(meta);
+    wrapper.appendChild(tail);
+    wrapper.appendChild(bubble);
+    row.appendChild(wrapper);
+
+    // Find the best insertion point - the list container inside the chat pane
     var list = chatPane.querySelector('[role="list"]') || chatPane;
     list.appendChild(row);
-    
-    setTimeout(function() { chatPane.scrollTop = chatPane.scrollHeight + 500; }, 100);
+
+    console.log('🤖 [SaveNote] Bot reply injected successfully.');
+
+    // Scroll to bottom - try multiple scroll containers
+    setTimeout(function() {
+      // The scroll container might be the chatPane itself or a parent
+      var scrollContainer = chatPane;
+      // Walk up to find the actual scrollable element
+      var el = chatPane;
+      for (var i = 0; i < 5; i++) {
+        if (el && el.scrollHeight > el.clientHeight) {
+          scrollContainer = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+      scrollContainer.scrollTop = scrollContainer.scrollHeight + 1000;
+      // Also try the chatPane itself
+      chatPane.scrollTop = chatPane.scrollHeight + 1000;
+    }, 150);
   }
 
   // ===== Business Logic =====
