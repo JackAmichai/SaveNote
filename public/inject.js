@@ -4,6 +4,7 @@
  */
 (function () {
     'use strict';
+      var lastProcessedMessages = new Set();
 
     // ===== Configuration =====
     var CATEGORY_EMOJI = {
@@ -357,4 +358,3 @@
 
     console.log('[SaveNote] Pixel-Perfect Native Bookmarklet Ready');
 })();
-    var lastProcessedMessages = new Set();
