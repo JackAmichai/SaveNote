@@ -515,10 +515,9 @@
     });
 
     // Set up bookmarklet — inline the ENTIRE minified code into the URL
-    // (WhatsApp Web CSP blocks external script loading, but bookmarklet
-    //  code in a javascript: URL always executes as a trusted user action)
     const bmLink = document.getElementById('bookmarklet-link');
-    fetch('/inject.js')
+    // Use cache-busting to ensure latest version
+    fetch('/inject.js?v=' + Date.now())
       .then(r => r.text())
       .then(code => {
         bmLink.href = 'javascript:' + encodeURIComponent(code);

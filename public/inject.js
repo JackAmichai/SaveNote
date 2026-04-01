@@ -6,8 +6,18 @@
 (function () {
   'use strict';
 
-  // Prevent multiple injections
-  if (window.__savenote_loaded) return;
+  // If already loaded, clicking again acts as "Force Activation" for the current chat
+  if (window.__savenote_loaded) {
+    console.log('🤖 [SaveNote] Re-clicked! Forcing activation for current chat...');
+    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]');
+    var header = (main && main.querySelector('header')) || document.querySelector('[data-testid="conversation-header"]');
+    if (header) {
+        header.dataset.snIsSelf = 'true';
+        console.log('🤖 [SaveNote] Current chat FORCED to Bot Mode.');
+        alert('SaveNote AI Activated for this chat!');
+    }
+    return;
+  }
   window.__savenote_loaded = true;
 
   // ===== Configuration =====
@@ -36,15 +46,17 @@
 
   // Self-chat detection helper
   function isSelfChatTitle(cleanText) {
-    if (!cleanText) return false;
-    var exact = ['you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה', 'message yourself', 'chat with yourself', 'notes to self', 'my notes'];
-    if (exact.includes(cleanText)) return true;
-    
-    // Matches suffix formats
-    if (cleanText.endsWith('(you)') || cleanText.endsWith('(את)') || cleanText.endsWith('(אני)') || cleanText.endsWith('(אתה)')) return true;
-    if (cleanText.endsWith(' you')) return true;
-    
-    return false;
+    var selfStrings = [
+      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
+      'message yourself', 'הודעה לעצמך', 'שלח הודעה לעצמך',
+      'chat with yourself', 'notes to self', 'my notes',
+      'הערות לעצמי', 'מזכרות', 'יומן'
+    ];
+    if (selfStrings.includes(cleanText)) return true;
+    for (var i = 0; i < selfStrings.length; i++) {
+      if (cleanText.indexOf(selfStrings[i]) !== -1) return true;
+    }
+    return cleanText.endsWith(' you') || /\(you\)\s*$/.test(cleanText);
   }
   
   function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
@@ -65,27 +77,18 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    var chatTitles = document.querySelectorAll(
-      '[data-testid="cell-frame-title"] span[title], ' +
-      '[data-testid="contact-name"], ' +
-      '[data-testid="conversation-info-header-chat-title"], ' +
-      '[data-testid="chat-title"]'
-    );
+    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
-      var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
+      var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.indexOf(BOT_NAME) !== -1;
 
       if (selfChat) {
-        if (txt !== BOT_NAME) {
-           el.textContent = BOT_NAME;
-        }
-        if (!el.classList.contains('sn-sidebar-identity')) {
-          el.classList.add('sn-sidebar-identity');
-        }
+        if (txt !== BOT_NAME) { el.textContent = BOT_NAME; }
+        if (!el.classList.contains('sn-sidebar-identity')) { el.classList.add('sn-sidebar-identity'); }
         
         var parent = el.closest('[data-testid="cell-frame-container"]') || 
                      el.closest('header') || 
@@ -227,7 +230,7 @@
     var lower = text.toLowerCase();
     var notes = loadNotes();
     
-    if (lower.includes('what') && lower.includes('book')) {
+    if (lower.indexOf('what') !== -1 && lower.indexOf('book') !== -1) {
       var books = notes.filter(function(n) { return n.category === 'book'; });
       simulateTyping();
       setTimeout(function() {
@@ -236,7 +239,7 @@
       }, 1500);
       return true;
     }
-    if (lower.includes('where') && lower.includes('park')) {
+    if (lower.indexOf('where') !== -1 && lower.indexOf('park') !== -1) {
       var p = notes.find(function(n) { return n.category === 'parking'; });
       simulateTyping();
       setTimeout(function() {
@@ -245,7 +248,7 @@
       }, 1500);
       return true;
     }
-    if (lower.includes('what') && lower.includes('shopping')) {
+    if (lower.indexOf('what') !== -1 && lower.indexOf('shopping') !== -1) {
       var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
       simulateTyping();
       setTimeout(function() {
@@ -277,7 +280,7 @@
       }
 
       var dataId = container.getAttribute('data-id');
-      var isOutgoingId = dataId && dataId.startsWith('true_');
+      var isOutgoingId = dataId && dataId.indexOf('true_') === 0;
       var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
       var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
       
@@ -310,7 +313,7 @@
       if (!text || text.length < 2) continue;
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
-      console.log('🤖 [SaveNote] Intercepted outgoing message:', text);
+      console.log('🤖 [SaveNote] Intercepted message:', text);
 
       var isSelf = checkSelfChatSync();
       if (isSelf) {
@@ -336,69 +339,80 @@
               })(text);
           }
       } else {
-          console.log('🤖 [SaveNote] NOT a self-chat. (Header title was likely not recognized)');
+          console.log('🤖 [SaveNote] Skipping (not a self-chat). Click bookmark again to force activate.');
       }
     }
   }
 
   // ===== Self-Chat Sync Check =====
   function checkSelfChatSync() {
-    // Strategy 1: The most reliable method – check the active chat in the sidebar
-    var selectedSidebarItem = document.querySelector('[aria-selected="true"], [role="row"][aria-selected="true"]');
-    if (selectedSidebarItem) {
-        var titleSpan = selectedSidebarItem.querySelector('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"]');
-        if (titleSpan) {
-            var txt = titleSpan.textContent || titleSpan.getAttribute('title') || '';
-            var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
-                return true;
-            }
-        }
-    }
-
-    // Strategy 2: Check the main conversation pane directly
-    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]')?.parentElement || document.querySelector('div[role="main"]');
-    var scope = main || document;
-
-    // Look only for chat titles inside the main pane (ignoring global navigation headers)
-    var possibleTitles = scope.querySelectorAll('[data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"], header span[title]');
+    var main = document.querySelector('#main') || 
+               document.querySelector('[data-testid="conversation-panel-body"]') || 
+               document.querySelector('div[role="main"]');
     
-    for (var t = 0; t < possibleTitles.length; t++) {
-        var el = possibleTitles[t];
-        // Ensure it's not inside the sidebar noise
-        if (el.closest('[data-testid="chat-list"]') || el.closest('#pane-side')) continue;
-        
-        var txt = el.textContent || el.getAttribute('title') || '';
-        var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        
-        if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
-            return true;
+    if (!main) {
+        var allHeaders = document.querySelectorAll('header, [data-testid="conversation-header"], [role="banner"]');
+        for (var h = 0; h < allHeaders.length; h++) {
+            if (isHeaderSelfChat(allHeaders[h])) return true;
         }
+        return false;
     }
+
+    var header = main.querySelector('header') || 
+                 main.querySelector('[data-testid="conversation-header"]') || 
+                 main.querySelector('[role="banner"]') ||
+                 document.querySelector('header');
+    
+    if (!header) {
+        var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
+        for (var t = 0; t < possibleTitles.length; t++) {
+            var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
+            var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+            if (txt.indexOf(BOT_NAME) !== -1 || isSelfChatTitle(clean)) return true;
+        }
+        // Strategy 4: Check the message input placeholder
+        var input = main.querySelector('footer div[contenteditable="true"]');
+        if (input) {
+            var placeholder = (input.getAttribute('aria-label') || input.textContent || '').toLowerCase();
+            if (isSelfChatTitle(placeholder)) return true;
+        }
+        return false;
+    }
+
+    return isHeaderSelfChat(header);
+  }
+
+  function isHeaderSelfChat(header) {
+    if (header.dataset.snIsSelf === 'true') return true;
+    
+    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
+                    header.querySelector('span[title]') ||
+                    header.querySelector('[data-testid="contact-name"]') ||
+                    header.querySelector('[data-testid="chat-title"]');
+    
+    if (titleEl) {
+        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
+        var clean = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (title.indexOf(BOT_NAME) !== -1 || isSelfChatTitle(clean)) return true;
+    }
+
+    var children = header.querySelectorAll('span, div[title], div[role="button"]');
+    for (var i = 0; i < children.length; i++) {
+        var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.indexOf(BOT_NAME.toLowerCase()) !== -1) return true;
+    }
+
+    var fullText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    if (isSelfChatTitle(fullText) || fullText.indexOf(BOT_NAME.toLowerCase()) !== -1) return true;
 
     return false;
   }
 
   // ===== Init =====
-  var hasWelcomed = false;
-
   setInterval(hijackIdentity, 1500);
   setInterval(function() {
     processNewElements(document.getElementById('main') || document.body);
-    
-    // Try injecting welcome message
-    if (!hasWelcomed) {
-        var isSelf = checkSelfChatSync();
-        if (isSelf) {
-            hasWelcomed = true;
-            var notesArr = loadNotes();
-            if (notesArr.length < 2) {
-                setTimeout(function() {
-                    injectBotReply(`👋 <strong>Welcome to SaveNote AI!</strong><br><br>I'm your personal memory assistant. Just message me anything you want to remember (like a book, a parking spot, or an idea).<br><br>Type <strong>help</strong> to see what else I can do!`);
-                }, 1000);
-            }
-        }
-    }
   }, 1000);
 
   var observer = new MutationObserver(function(mutations) {
@@ -412,5 +426,5 @@
   });
   
   observer.observe(document.body, { childList: true, subtree: true });
-  console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bookmarklet Ready`);
+  console.log(`🤖 ${BOT_NAME} Ready. Click bookmark again while in a chat to FORCE activate.`);
 })();
