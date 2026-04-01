@@ -334,38 +334,33 @@
   }
 
   async function checkSelfChat() {
-    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]') || document.querySelector('div[role="main"]');
-    if (!main) {
-        var allHeaders = document.querySelectorAll('header, [data-testid="conversation-header"], [role="banner"]');
-        for (var h = 0; h < allHeaders.length; h++) { if (isHeaderSelfChat(allHeaders[h])) return true; }
-        return false;
-    }
-    var header = main.querySelector('header') || main.querySelector('[data-testid="conversation-header"]') || main.querySelector('[role="banner"]') || document.querySelector('header');
-    if (!header) {
-        var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
-        for (var t = 0; t < possibleTitles.length; t++) {
-            var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
+    // Strategy 1: check the active chat in the sidebar
+    var selectedSidebarItem = document.querySelector('[aria-selected="true"], [role="row"][aria-selected="true"]');
+    if (selectedSidebarItem) {
+        var titleSpan = selectedSidebarItem.querySelector('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"]');
+        if (titleSpan) {
+            var txt = titleSpan.textContent || titleSpan.getAttribute('title') || '';
             var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
+            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
+                return true;
+            }
         }
-        return false;
     }
-    return isHeaderSelfChat(header);
-  }
 
-  function isHeaderSelfChat(header) {
-    if (header.dataset.snIsSelf === 'true') return true;
-    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"], [data-testid="chat-title"]');
-    if (titleEl) {
-        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
-        var clean = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (title.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
-    }
-    var children = header.querySelectorAll('span, div[title]');
-    for (var i = 0; i < children.length; i++) {
-        var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) return true;
+    // Strategy 2: check inside the main pane
+    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]')?.parentElement || document.querySelector('div[role="main"]');
+    var scope = main || document;
+
+    var possibleTitles = scope.querySelectorAll('[data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"], header span[title]');
+    for (var t = 0; t < possibleTitles.length; t++) {
+        var el = possibleTitles[t];
+        if (el.closest('[data-testid="chat-list"]') || el.closest('#pane-side')) continue;
+        
+        var txt = el.textContent || el.getAttribute('title') || '';
+        var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
+            return true;
+        }
     }
     return false;
   }

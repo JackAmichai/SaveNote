@@ -343,68 +343,38 @@
 
   // ===== Self-Chat Sync Check =====
   function checkSelfChatSync() {
-    var main = document.querySelector('#main') || 
-               document.querySelector('[data-testid="conversation-panel-body"]') || 
-               document.querySelector('div[role="main"]');
-    
-    if (!main) {
-        console.log('🤖 [SaveNote] Main chat pane not found.');
-        var allHeaders = document.querySelectorAll('header, [data-testid="conversation-header"], [role="banner"]');
-        for (var h = 0; h < allHeaders.length; h++) {
-            if (isHeaderSelfChat(allHeaders[h])) return true;
-        }
-        return false;
-    }
-
-    var header = main.querySelector('header') || 
-                 main.querySelector('[data-testid="conversation-header"]') || 
-                 main.querySelector('[role="banner"]') ||
-                 document.querySelector('header') || 
-                 document.querySelector('[data-testid="conversation-header"]');
-    
-    if (!header) {
-        console.log('🤖 [SaveNote] Header element not found inside main pane.');
-        var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
-        for (var t = 0; t < possibleTitles.length; t++) {
-            var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
+    // Strategy 1: The most reliable method – check the active chat in the sidebar
+    var selectedSidebarItem = document.querySelector('[aria-selected="true"], [role="row"][aria-selected="true"]');
+    if (selectedSidebarItem) {
+        var titleSpan = selectedSidebarItem.querySelector('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"]');
+        if (titleSpan) {
+            var txt = titleSpan.textContent || titleSpan.getAttribute('title') || '';
             var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-            console.log('🤖 [SaveNote] Checking possible title:', clean);
-            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
+            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
+                return true;
+            }
         }
-        return false;
     }
 
-    return isHeaderSelfChat(header);
-  }
+    // Strategy 2: Check the main conversation pane directly
+    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]')?.parentElement || document.querySelector('div[role="main"]');
+    var scope = main || document;
 
-  function isHeaderSelfChat(header) {
-    if (header.dataset.snIsSelf === 'true') return true;
+    // Look only for chat titles inside the main pane (ignoring global navigation headers)
+    var possibleTitles = scope.querySelectorAll('[data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"], header span[title]');
     
-    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
-                    header.querySelector('span[title]') ||
-                    header.querySelector('[data-testid="contact-name"]') ||
-                    header.querySelector('[data-testid="chat-title"]');
-    
-    if (titleEl) {
-        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
-        var clean = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        console.log('🤖 [SaveNote] Header title found:', JSON.stringify(clean));
-        if (title.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
-    }
-
-    var children = header.querySelectorAll('span, div[title], div[role="button"]');
-    for (var i = 0; i < children.length; i++) {
-        var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) {
-            console.log('🤖 [SaveNote] Self-chat detected in header child:', text || attr);
+    for (var t = 0; t < possibleTitles.length; t++) {
+        var el = possibleTitles[t];
+        // Ensure it's not inside the sidebar noise
+        if (el.closest('[data-testid="chat-list"]') || el.closest('#pane-side')) continue;
+        
+        var txt = el.textContent || el.getAttribute('title') || '';
+        var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        
+        if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) {
             return true;
         }
     }
-
-    var fullText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-    console.log('🤖 [SaveNote] Full header text:', fullText);
-    if (isSelfChatTitle(fullText) || fullText.includes(BOT_NAME.toLowerCase())) return true;
 
     return false;
   }
