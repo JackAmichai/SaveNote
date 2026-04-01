@@ -85,16 +85,29 @@
   }
 
   // ===== Self-Chat Detection Helper =====
-  function isSelfChatTitle(cleanText) {
-    if (!cleanText) return false;
-    var exact = ['you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה', 'message yourself', 'chat with yourself', 'notes to self', 'my notes'];
-    if (exact.includes(cleanText)) return true;
-    
-    // Matches suffix formats like "+972 54... (You)"
-    if (cleanText.endsWith('(you)') || cleanText.endsWith('(את)') || cleanText.endsWith('(אני)') || cleanText.endsWith('(אתה)')) return true;
-    if (cleanText.endsWith(' you')) return true;
-    
+  function isSelfChatTitle(txt) {
+    if (!txt) return false;
+    var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    var selfStrings = [
+      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
+      'message yourself', 'chat with yourself', 'notes to self', 'my notes',
+      'הודעה לעצמך', 'שלח הודעה לעצמך', 'הערות לעצמי', 'מזכרות', 'יומן'
+    ];
+    if (selfStrings.includes(clean)) return true;
+    for (var i = 0; i < selfStrings.length; i++) {
+        if (clean.indexOf(selfStrings[i]) !== -1) return true;
+    }
     return false;
+  }
+
+  function isSelfChatSync() {
+    var header = document.querySelector('header, [data-testid="conversation-header"], [role="banner"], [data-testid="conversation-panel-header"]');
+    if (!header) return false;
+    if (header.dataset.snIsSelf === 'true') return true;
+    var titleEl = header.querySelector('[title], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"], span[dir="auto"]');
+    if (!titleEl) return false;
+    var txt = titleEl.getAttribute('title') || titleEl.textContent || '';
+    return isSelfChatTitle(txt) || txt.indexOf(BOT_NAME) !== -1;
   }
 
   // ===== UI: Bot Identity Hijacker =====
@@ -114,10 +127,7 @@
       }
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
-      var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-      var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-      
-      var isSelfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
+      var isSelfChat = isSelfChatTitle(txt) || isSelfChatTitle(titleAttr) || txt.includes(BOT_NAME);
 
       if (isSelfChat) {
         if (txt !== BOT_NAME) { el.textContent = BOT_NAME; }
@@ -339,6 +349,8 @@
   }
 
   function processNewElements(el) {
+    if (lastProcessedMessages.size > 200) lastProcessedMessages.clear();
+
     var msgContainers = el.querySelectorAll ? [
       ...el.querySelectorAll('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in'),
       ...(el.matches && el.matches('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in') ? [el] : []),
@@ -348,17 +360,21 @@
       var container = msgContainers[i];
       if (!container.closest('#main') && !container.closest('[data-testid="conversation-panel-body"]')) continue;
 
+      if (!isSelfChatSync()) {
+        var header = document.querySelector('header[data-sn-is-self="true"], [role="banner"][data-sn-is-self="true"]');
+        if (!header) continue;
+      }
+
       var innerDataElem = container.querySelector('div[data-id]') || container;
       var dataId = innerDataElem.getAttribute('data-id');
       
-      var isOutgoing = (dataId && dataId.startsWith('true_')) || 
-                       container.closest('.message-out') || 
-                       container.classList.contains('message-out') || 
-                       container.querySelector('.message-out') || 
-                       container.querySelector('[data-icon="msg-dblcheck"]') || 
-                       container.querySelector('[data-icon="msg-check"]') ||
-                       container.querySelector('[data-icon="msg-time"]'); // Catch before sent
-      if (!isOutgoing) continue;
+      // In a self-chat, ANY native message (incoming or outgoing) is from the user.
+      var isNativeMessage = (dataId && (dataId.startsWith('true_') || dataId.startsWith('false_'))) || 
+                             container.hasAttribute('role') || 
+                             container.classList.contains('message-out') || 
+                             container.classList.contains('message-in');
+                             
+      if (!isNativeMessage) continue;
 
       var textWrapper = container.querySelector('.selectable-text span') || container.querySelector('.selectable-text') || container.querySelector('.copyable-text[data-pre-plain-text]') || container.querySelector('span.copyable-text') || container.querySelector('.copyable-text') || container;
       var text = "";

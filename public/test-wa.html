@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { background: #efeae2; font-family: sans-serif; }
+    #main { display: flex; flex-direction: column; width: 600px; height: 800px; background: #fff; margin: 20px auto; }
+    header { background: #f0f2f5; padding: 10px; display: flex; align-items: center; }
+    [data-testid="conversation-panel-body"] { flex: 1; overflow-y: auto; padding: 20px; background: #efeae2; }
+    .row { display: flex; width: 100%; margin-bottom: 2px; }
+    .message-out { background: #d9fdd3; margin-left: auto; border-radius: 8px; padding: 8px; max-width: 65%; display: flex; flex-direction: column; }
+    .selectable-text { font-size: 14px; }
+  </style>
+</head>
+<body class="light">
+  <div id="main">
+    <header data-sn-is-self="true">
+      <div data-testid="avatar-img-container">Avatar</div>
+      <div style="margin-left: 15px;">
+        <span title="+972 54-484-4125 (You)" data-testid="conversation-info-header-chat-title">+972 54-484-4125 (You)</span>
+      </div>
+    </header>
+
+    <div data-testid="conversation-panel-body">
+      <!-- Simulated historic messages -->
+      <div role="row" class="row">
+        <div data-id="true_123" class="message-out">
+          <span class="selectable-text">where did i park my car?</span>
+          <span data-icon="msg-dblcheck"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/inject.js"></script>
+
+  <script>
+    // Simulate user typing a new message after injection loads
+    setTimeout(() => {
+      const panel = document.querySelector('[data-testid="conversation-panel-body"]');
+      const newRow = document.createElement('div');
+      newRow.setAttribute('role', 'row');
+      newRow.className = 'row';
+      newRow.innerHTML = `
+        <div data-id="true_456" class="message-out">
+          <span class="selectable-text">how do i interact with you?</span>
+          <span data-icon="msg-time"></span>
+        </div>
+      `;
+      panel.appendChild(newRow);
+    }, 2000);
+  </script>
+</body>
+</html>

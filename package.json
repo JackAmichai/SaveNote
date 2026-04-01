@@ -8,13 +8,20 @@
     "test:ai": "node tests/test-ai.js",
     "test:db": "node tests/test-db.js"
   },
-  "keywords": ["whatsapp", "ai", "memory", "notes", "ollama"],
+  "keywords": [
+    "whatsapp",
+    "ai",
+    "memory",
+    "notes",
+    "ollama"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^11.7.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsdom": "^29.0.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.26.1"
   }

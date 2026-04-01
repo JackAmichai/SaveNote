@@ -101,16 +101,29 @@
   var lastProcessedMessages = new Set();
 
   // Self-chat detection helper
-  function isSelfChatTitle(cleanText) {
-    if (!cleanText) return false;
-    var exact = ['you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה', 'message yourself', 'chat with yourself', 'notes to self', 'my notes'];
-    if (exact.includes(cleanText)) return true;
-    
-    // Matches suffix formats like "+972 54... (You)"
-    if (cleanText.endsWith('(you)') || cleanText.endsWith('(את)') || cleanText.endsWith('(אני)') || cleanText.endsWith('(אתה)')) return true;
-    if (cleanText.endsWith(' you')) return true;
-    
+  function isSelfChatTitle(txt) {
+    if (!txt) return false;
+    var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    var selfStrings = [
+      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
+      'message yourself', 'chat with yourself', 'notes to self', 'my notes',
+      'הודעה לעצמך', 'שלח הודעה לעצמך', 'הערות לעצמי', 'מזכרות', 'יומן'
+    ];
+    if (selfStrings.includes(clean)) return true;
+    for (var i = 0; i < selfStrings.length; i++) {
+      if (clean.indexOf(selfStrings[i]) !== -1) return true;
+    }
     return false;
+  }
+
+  function isSelfChatSync() {
+    var header = document.querySelector('header, [data-testid="conversation-header"], [role="banner"], [data-testid="conversation-panel-header"]');
+    if (!header) return false;
+    if (header.dataset.snIsSelf === 'true') return true;
+    var titleEl = header.querySelector('[title], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"], span[dir="auto"]');
+    if (!titleEl) return false;
+    var txt = titleEl.getAttribute('title') || titleEl.textContent || '';
+    return isSelfChatTitle(txt) || txt.indexOf(BOT_NAME) !== -1;
   }
   
   function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
@@ -133,18 +146,11 @@
 
     var chatTitles = document.querySelectorAll('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
-      if (el.closest('[data-testid="chat-list"]') && !el.closest('[aria-selected="true"]')) {
-          // Only attempt to forcefully change the *active* sidebar item if necessary, to avoid lag.
-          // But it's okay to let it replace it if we really want to. For now, do it everywhere.
-      }
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
-      var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-      var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-      
-      var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.indexOf(BOT_NAME) !== -1;
+      var isSelfChat = isSelfChatTitle(txt) || isSelfChatTitle(titleAttr) || txt.indexOf(BOT_NAME) !== -1;
 
-      if (selfChat) {
+      if (isSelfChat) {
         if (txt !== BOT_NAME) { el.textContent = BOT_NAME; }
         if (!el.classList.contains('sn-sidebar-identity')) { el.classList.add('sn-sidebar-identity'); }
         
@@ -340,9 +346,7 @@
       }, 1500);
       return true;
     }
-
-    // Broad Shopping Query
-    if (lower.match(/\b(what|show|list)\b.*?\b(shop|shopping|buy|list)\b/)) {
+        if (lower.match(/\b(what|show|list)\b.*?\b(shop|shopping|buy|list)\b/)) {
       var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
       simulateTyping();
       setTimeout(function() {
@@ -355,7 +359,12 @@
     return false;
   }
 
+
+
   function processNewElements(el) {
+    // Basic Rate Limiting
+    if (lastProcessedMessages.size > 200) lastProcessedMessages.clear();
+
     var msgContainers = el.querySelectorAll ? [
       ...el.querySelectorAll('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in'),
       ...(el.matches && el.matches('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in') ? [el] : []),
@@ -367,22 +376,30 @@
           continue;
       }
 
+      if (!isSelfChatSync()) {
+        var header = document.querySelector('header[data-sn-is-self="true"], [role="banner"][data-sn-is-self="true"]');
+        if (!header) {
+           continue;
+        }
+      }
+
       var innerDataElem = container.querySelector('div[data-id]') || container;
       var dataId = innerDataElem.getAttribute('data-id');
-      var isOutgoingId = dataId && dataId.indexOf('true_') === 0;
-      var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out') || container.querySelector('.message-out');
-      var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || 
-                             container.querySelector('[data-icon="msg-check"]') || 
-                             container.querySelector('[data-icon="msg-time"]'); // Catch early before sent
       
-      var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
-      if (!isOutgoing) continue;
+      // In a self-chat, ANY native message (incoming or outgoing) is from the user.
+      // We process all of them as valid notes.
+      var isNativeMessage = (dataId && (dataId.indexOf('true_') === 0 || dataId.indexOf('false_') === 0)) || 
+                             container.hasAttribute('role') || 
+                             container.classList.contains('message-out') || 
+                             container.classList.contains('message-in');
+                             
+      if (!isNativeMessage) continue;
 
       var textWrapper = container.querySelector('.selectable-text span') || 
-                          container.querySelector('.selectable-text') ||
-                          container.querySelector('.copyable-text[data-pre-plain-text]') ||
-                          container.querySelector('span.copyable-text') ||
-                          container.querySelector('.copyable-text');
+                        container.querySelector('.selectable-text') || 
+                        container.querySelector('.copyable-text[data-pre-plain-text]') || 
+                        container.querySelector('span.copyable-text') || 
+                        container.querySelector('.copyable-text');
 
       if (!textWrapper) { textWrapper = container; }
 
@@ -406,7 +423,7 @@
       lastProcessedMessages.add(text);
       console.log('🤖 [SaveNote] Intercepted message:', text);
 
-      var isSelf = checkSelfChatSync();
+      var isSelf = isSelfChatSync();
       if (isSelf) {
           console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
           if (!handleCommand(text)) {
@@ -436,7 +453,7 @@
   }
 
   // ===== Self-Chat Sync Check =====
-  function checkSelfChatSync() {
+  function isSelfChatSync() {
     var main = document.querySelector('#main') || 
                document.querySelector('[data-testid="conversation-panel-body"]') || 
                document.querySelector('div[role="main"]');
