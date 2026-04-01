@@ -57,8 +57,9 @@ async function handleMessage(messageText, chatId) {
       // Send confirmation via WhatsApp
       const categoryEmoji = {
         book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
-        location: '📍', person: '👤', recipe: '🍳', health: '🏥',
-        finance: '💰', other: '📌'
+        location: '📍', person: '👤', contact: '📇', media: '🎬',
+        recipe: '🍳', health: '🏥', finance: '💰', shopping: '🛒',
+        other: '📌'
       };
       const emoji = categoryEmoji[result.category] || '📌';
       const confirmation = `${emoji} Got it! Saved under *${result.category}*:\n_"${result.summary}"_\n#${result.category}`;
