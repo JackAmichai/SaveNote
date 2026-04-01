@@ -1,9 +1,10 @@
 /**
  * Test the AI categorization module standalone.
- * Requires Ollama to be running locally.
+ * Supports multiple AI providers based on .env
  * Run: node tests/test-ai.js
  */
 const ai = require('../src/ai');
+const config = require('../src/config');
 
 const testMessages = [
   {
@@ -41,11 +42,27 @@ const testMessages = [
     expectedIntent: 'save',
     expectedCategory: 'idea',
   },
+  {
+    input: 'Just watched the new Spider-man movie, it was great!',
+    expectedIntent: 'save',
+    expectedCategory: 'media',
+  },
+  {
+    input: 'Contact for Dr. Smith is 555-0199',
+    expectedIntent: 'save',
+    expectedCategory: 'contact',
+  }
 ];
 
 async function runTests() {
-  console.log('🧪 Testing AI Categorization Module');
-  console.log('   (Requires Ollama running at localhost:11434)\n');
+  const provider = config.ai_provider || 'ollama';
+  console.log(`🧪 Testing AI Categorization Module (Provider: ${provider})`);
+  
+  if (provider === 'ollama') {
+    console.log(`   (Requires Ollama running at ${config.ollama.url})\n`);
+  } else {
+    console.log(`   (Using ${provider} API)\n`);
+  }
 
   let passed = 0;
   let failed = 0;
@@ -57,20 +74,23 @@ async function runTests() {
       console.log(`   Result: ${JSON.stringify(result)}`);
 
       const intentOk = result.intent === test.expectedIntent;
+      // Allow for some flexibility in category if intent is correct
       const categoryOk = result.category === test.expectedCategory;
 
       if (intentOk && categoryOk) {
         console.log(`   ✅ PASS (intent: ${result.intent}, category: ${result.category})\n`);
         passed++;
-      } else {
+      } else if (intentOk) {
         console.log(`   ⚠️  PARTIAL (expected intent=${test.expectedIntent}, category=${test.expectedCategory})`);
         console.log(`              got intent=${result.intent}, category=${result.category}\n`);
-        // Count as pass if intent is correct (category can vary by model)
-        if (intentOk) passed++;
-        else failed++;
+        passed++;
+      } else {
+        console.log(`   ❌ FAIL (expected intent=${test.expectedIntent}, category=${test.expectedCategory})`);
+        console.log(`              got intent=${result.intent}, category=${result.category}\n`);
+        failed++;
       }
     } catch (error) {
-      console.log(`   ❌ FAIL: ${error.message}\n`);
+      console.log(`   ❌ ERROR: ${error.message}\n`);
       failed++;
     }
   }
@@ -80,12 +100,11 @@ async function runTests() {
   if (failed === 0) {
     console.log('✅ All tests passed! 🎉\n');
   } else {
-    console.log('⚠️  Some tests failed. This may be due to model interpretation differences.\n');
+    console.log('⚠️  Some tests failed. This may be due to model interpretation differences or connection issues.\n');
   }
 }
 
 runTests().catch(err => {
   console.error('❌ Test suite failed:', err.message);
-  console.error('   Make sure Ollama is running: ollama serve');
   process.exit(1);
 });

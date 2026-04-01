@@ -13,7 +13,15 @@
 3. **It's saved locally** in SQLite with full-text search
 4. **Ask for it back** — send _"Where did I park?"_ and get an instant reply
 
-All processing happens locally using [Ollama](https://ollama.com). No cloud AI, no data leaving your machine.
+All processing happens locally by default using [Ollama](https://ollama.com). No cloud AI, no data leaving your machine. For faster responses and higher accuracy, **Groq** and **OpenAI** are also supported!
+
+## Features
+
+- **Multi-Provider AI**: Supports Ollama (local), Groq (fastest), and OpenAI.
+- **Auto-Categorization**: Notes are intelligently sorted into `book`, `parking`, `idea`, `reminder`, `location`, `person`, `contact`, `media`, `recipe`, `health`, `finance`, `shopping`, and `other`.
+- **Smart Querying**: Ask questions like "Where did I park?" and get a formatted response.
+- **Local Storage**: Everything is stored in an encrypted-at-rest SQLite database on your machine.
+- **Web Dashboard**: Browse, search, and manage your memories in a clean UI.
 
 ## Live Demo
 
@@ -23,7 +31,7 @@ Visit the [deployed dashboard](https://savenote.vercel.app) to see a demo with s
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) v18+
-- [Ollama](https://ollama.com) installed and running
+- [Ollama](https://ollama.com) (optional, if using local AI)
 - A WhatsApp account
 
 ### Setup
@@ -36,18 +44,18 @@ cd SaveNote
 # 2. Install dependencies
 npm install
 
-# 3. Pull an Ollama model
-ollama pull llama3.2
-
-# 4. Make sure Ollama is running
-ollama serve
-
-# 5. Configure (optional)
+# 3. Configure (required for cloud AI providers)
 cp .env.example .env
-
-# 6. Start SaveNote
-npm start
+# Edit .env to set your preferred AI_PROVIDER and API keys
 ```
+
+### AI Configuration
+
+| Provider | Speed | Setup |
+|----------|-------|-------|
+| **Ollama** | Medium | Local, free, no API key needed |
+| **Groq** | ⚡ Blazing | Cloud, free tier available, needs API key |
+| **OpenAI** | High | Cloud, paid, needs API key |
 
 On first run, scan the **QR code** in your terminal with **WhatsApp → Linked Devices → Link a Device**.
 
@@ -81,7 +89,7 @@ DASHBOARD_PORT=3000
 
 ## Categories
 
-Notes are auto-categorized into: `book`, `parking`, `idea`, `reminder`, `location`, `person`, `recipe`, `health`, `finance`, `other`.
+Notes are auto-categorized into: `book`, `parking`, `idea`, `reminder`, `location`, `person`, `contact`, `media`, `recipe`, `health`, `finance`, `shopping`, `other`.
 
 ## Architecture
 
