@@ -263,8 +263,8 @@
 
   function processNewElements(el) {
     var msgContainers = el.querySelectorAll ? [
-      ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]'),
-      ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id]') ? [el] : []),
+      ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in'),
+      ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in') ? [el] : []),
     ] : [];
 
     for (var i = 0; i < msgContainers.length; i++) {
@@ -420,6 +420,12 @@
 
   // ===== Init =====
   setInterval(hijackIdentity, 1500);
+
+  // Fallback polling for reliable message interception
+  setInterval(function() {
+    processNewElements(document.getElementById('main') || document.body);
+  }, 1000);
+
   var observer = new MutationObserver(function(mutations) {
     for (var i = 0; i < mutations.length; i++) {
       var mutation = mutations[i];
