@@ -34,7 +34,6 @@
   var lastProcessedMessages = new Set();
   var BOT_NAME = 'SaveNote AI';
   var BOT_COLOR = '#008069';
-  var BOT_DARK_COLOR = '#00a884';
 
   // SVG for bot avatar
   var BOT_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
@@ -67,7 +66,6 @@
       }, function(response) {
         if (response && response.success) {
           notes.unshift(response.note);
-          // Simulate typing delay before responding
           simulateTyping();
           setTimeout(function() {
             injectBotReply(`✅ Got it! Saved under <strong>${category}</strong> ${CATEGORY_EMOJI[category]}<br><small>"${text}"</small>`);
@@ -105,7 +103,6 @@
 
   // ===== UI: Bot Identity Hijacker =====
   function hijackIdentity() {
-    // Determine Theme
     var bodyClass = document.body.className;
     if (bodyClass.includes('dark')) {
       document.body.setAttribute('data-theme', 'dark');
@@ -113,29 +110,23 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    // 1. Rename 'You' in sidebar and header
-    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"]');
+    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
-      // Strip WhatsApp's invisible Bi-Di formatting characters (LRM, RLM) and trim
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       
       var isSelfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
 
       if (isSelfChat) {
-        if (txt !== BOT_NAME) {
-          el.textContent = BOT_NAME;
-        }
-        if (!el.classList.contains('sn-sidebar-identity')) {
-          el.classList.add('sn-sidebar-identity');
-        }
+        if (txt !== BOT_NAME) { el.textContent = BOT_NAME; }
+        if (!el.classList.contains('sn-sidebar-identity')) { el.classList.add('sn-sidebar-identity'); }
         
-        // Try to replace avatar in sidebar or header
-        var parent = el.closest('[data-testid="cell-frame-container"]') || el.closest('header');
+        var parent = el.closest('[data-testid="cell-frame-container"]') || el.closest('header') || el.closest('[data-testid="conversation-header"]') || el.closest('[role="banner"]');
         if (parent) {
-          var avatarContainer = parent.querySelector('[data-testid="avatar-img-container"]');
+          parent.dataset.snIsSelf = 'true';
+          var avatarContainer = parent.querySelector('[data-testid="avatar-img-container"]') || parent.querySelector('div[role="button"] img')?.parentElement;
           if (avatarContainer && !parent.dataset.snHijacked) {
             avatarContainer.innerHTML = BOT_SVG;
             parent.dataset.snHijacked = 'true';
@@ -146,25 +137,17 @@
   }
 
   function simulateTyping() {
-      // Find the header subtitle and inject "typing..."
       var headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]') || 
                          document.querySelector('header span[title]');
-      if (headerTitle) {
-          var titleText = headerTitle.textContent;
-          if (titleText === BOT_NAME) {
-            var subtitleContainer = document.querySelector('[data-testid="conversation-info-header-subtitle"]') ||
-                                     document.querySelector('header [data-testid="chat-subtitle"]');
-            if (subtitleContainer) {
-                var oldHTML = subtitleContainer.innerHTML;
-                subtitleContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
-                setTimeout(function() {
-                    subtitleContainer.innerHTML = oldHTML; // Revert after 1.5s
-                }, 1400);
-            }
+      if (headerTitle && headerTitle.textContent === BOT_NAME) {
+          var subtitleContainer = document.querySelector('[data-testid="conversation-info-header-subtitle"]') || document.querySelector('header [data-testid="chat-subtitle"]');
+          if (subtitleContainer) {
+              var oldHTML = subtitleContainer.innerHTML;
+              subtitleContainer.innerHTML = '<span class="sn-typing-text">typing...</span>';
+              setTimeout(function() { subtitleContainer.innerHTML = oldHTML; }, 1400);
           }
       }
 
-      // Sidebar typing
       var chatTitles = document.querySelectorAll('.sn-sidebar-identity');
       chatTitles.forEach(function(el) {
           var parent = el.closest('[data-testid="cell-frame-container"]');
@@ -183,29 +166,21 @@
       });
   }
 
-  // ===== Bot Reply Injection =====
   function injectBotReply(html) {
-    // Find the scrollable message container
     var chatPane = document.querySelector('div[role="region"][aria-label="Message list"]') || 
                    document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
                    document.querySelector('#main .copyable-area [role="application"]') ||
                    document.querySelector('#main .copyable-area');
 
-    if (!chatPane) {
-        console.log('🤖 [SaveNote] Chat pane not found for reply injection.');
-        return;
-    }
+    if (!chatPane) return;
 
-    var isDark = document.body.className.includes('dark') || 
-                 document.body.getAttribute('data-theme') === 'dark';
-
+    var isDark = document.body.className.includes('dark') || document.body.getAttribute('data-theme') === 'dark';
     var bubbleBg = isDark ? '#202c33' : '#ffffff';
     var bubbleColor = isDark ? '#e9edef' : '#111b21';
     var nameColor = isDark ? '#00a884' : '#008069';
     var timeColor = isDark ? '#8696a0' : '#667781';
     var tailColor = isDark ? '#202c33' : '#ffffff';
-
     var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     var row = document.createElement('div');
@@ -241,23 +216,18 @@
     bubble.appendChild(text);
     bubble.appendChild(meta);
     wrapper.appendChild(tail);
-    // Find the best insertion point - the list container inside the chat pane
-    var list = chatPane.querySelector('[role="list"]') || chatPane;
-    if (list === chatPane && chatPane.firstElementChild) {
-        list = chatPane.firstElementChild; // Usually the actual flex container
-    }
-    list.appendChild(row);
+    wrapper.appendChild(bubble);
+    row.appendChild(wrapper);
 
-    console.log('🤖 [SaveNote] Bot reply injected successfully.');
+    var list = chatPane.querySelector('[role="list"]') || chatPane;
+    if (list === chatPane && chatPane.firstElementChild) { list = chatPane.firstElementChild; }
+    list.appendChild(row);
 
     setTimeout(function() {
       var scrollContainer = chatPane;
       var el = chatPane;
       for (var i = 0; i < 5; i++) {
-        if (el && el.scrollHeight > el.clientHeight) {
-          scrollContainer = el;
-          break;
-        }
+        if (el && el.scrollHeight > el.clientHeight) { scrollContainer = el; break; }
         el = el.parentElement;
       }
       scrollContainer.scrollTop = scrollContainer.scrollHeight + 1000;
@@ -265,73 +235,39 @@
     }, 150);
   }
 
-  // ===== Command Handler =====
   function handleCommand(text) {
     var lower = text.toLowerCase();
-    
     if (lower.includes('what') && lower.includes('book')) {
       var books = notes.filter(function(n) { return n.category === 'book'; });
       simulateTyping();
       setTimeout(function() {
-          if (books.length === 0) {
-            injectBotReply("📚 You haven't saved any books yet! Just send me a book title to start your list.");
-          } else {
-            var list = books.slice(0, 5).map(function(b) { return '• ' + b.summary; }).join('<br>');
-            injectBotReply(`📚 <strong>Here are the last few books you read:</strong><br>${list}`);
-          }
+          if (books.length === 0) injectBotReply("📚 You haven't saved any books yet!");
+          else injectBotReply(`📚 <strong>Your books:</strong><br>${books.slice(0, 5).map(function(b) { return '• ' + b.summary; }).join('<br>')}`);
       }, 1500);
       return true;
     }
-    
     if (lower.includes('where') && lower.includes('park')) {
-      var parking = notes.find(function(n) { return n.category === 'parking'; });
+      var p = notes.find(function(n) { return n.category === 'parking'; });
       simulateTyping();
       setTimeout(function() {
-          if (!parking) {
-            injectBotReply("🅿️ I don't have any recent parking notes. Don't forget to tell me where you park next time!");
-          } else {
-            injectBotReply(`🅿️ <strong>Last parking spot found:</strong><br>"${parking.raw_message}"<br><small>Saved ${new Date(parking.created_at).toLocaleTimeString()}</small>`);
-          }
+          if (!p) injectBotReply("🅿️ No parking spot found.");
+          else injectBotReply(`🅿️ <strong>Last parking spot:</strong><br>"${p.raw_message}"`);
       }, 1500);
       return true;
     }
-
-    if (lower.includes('what') && (lower.includes('shop') || lower.includes('groceries'))) {
-        var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
-        simulateTyping();
-        setTimeout(function() {
-            if (shopping.length === 0) {
-              injectBotReply("🛒 Your shopping list is empty.");
-            } else {
-              var list = shopping.map(function(s) { return '• ' + s.summary; }).join('<br>');
-              injectBotReply(`🛒 <strong>Your shopping list:</strong><br>${list}`);
-            }
-        }, 1500);
-        return true;
-    }
-
     if (lower.match(/\b(help|hi|hello)\b/)) {
       simulateTyping();
       setTimeout(function() {
-          injectBotReply(`👋 <strong>Hi! I'm ${BOT_NAME}.</strong><br>I'm your personal memory assistant. Just message me anything you want to remember, and I'll categorize it for you!<br><br>Ask me:<br>• "What books did I read?"<br>• "Where did I park?"<br>• "What's on my shopping list?"`);
+          injectBotReply(`👋 Hi! I'm ${BOT_NAME}. Message me anything to remember it.`);
       }, 1500);
       return true;
     }
-
     return false;
   }
 
-  // ===== WhatsApp Web Message Observer =====
   function startObservers() {
-    // 1. Identity Hijacker Interval
     setInterval(hijackIdentity, 1500);
-
-    // 2. Fallback polling for message interception (reliable for React DOM changes)
-    setInterval(function() {
-      processNewElements(document.getElementById('main') || document.body);
-    }, 1000);
-
-    // 3. Message Mutation Observer
+    setInterval(function() { processNewElements(document.getElementById('main') || document.body); }, 1000);
     var observer = new MutationObserver(function(mutations) {
       for (var i = 0; i < mutations.length; i++) {
         var mutation = mutations[i];
@@ -341,8 +277,6 @@
         }
       }
     });
-
-    // Use document.body to ensure we never detach during React re-renders
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
@@ -354,153 +288,77 @@
 
     for (var i = 0; i < msgContainers.length; i++) {
       var container = msgContainers[i];
-      
-      // CRITICAL: Only process messages in the main conversation pane, skip sidebar last-message previews
-      if (!container.closest('#main') && !container.closest('[data-testid="conversation-panel-body"]')) {
-          continue;
-      }
+      if (!container.closest('#main') && !container.closest('[data-testid="conversation-panel-body"]')) continue;
 
       var dataId = container.getAttribute('data-id');
-      var isOutgoingId = dataId && dataId.startsWith('true_');
-      var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
-      var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
-      
-      var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
-
+      var isOutgoing = (dataId && dataId.startsWith('true_')) || container.closest('.message-out') || container.classList.contains('message-out') || container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
       if (!isOutgoing) continue;
 
-      var textWrapper = container.querySelector('.selectable-text span') || 
-                          container.querySelector('.selectable-text') ||
-                          container.querySelector('.copyable-text[data-pre-plain-text]') ||
-                          container.querySelector('span.copyable-text') ||
-                          container.querySelector('.copyable-text');
-      
-      if (!textWrapper) {
-          textWrapper = container; // Ultimate fallback: just strip everything else
-      }
-
-      // Extract text and try to exclude timestamp
+      var textWrapper = container.querySelector('.selectable-text span') || container.querySelector('.selectable-text') || container.querySelector('.copyable-text[data-pre-plain-text]') || container.querySelector('span.copyable-text') || container.querySelector('.copyable-text') || container;
       var text = "";
       if (textWrapper.querySelector('span.selectable-text')) {
           text = textWrapper.querySelector('span.selectable-text').textContent;
       } else {
-          // Clone to avoid modifying DOM, then remove metadata if present
           var clone = textWrapper.cloneNode(true);
           var metas = clone.querySelectorAll('[data-testid="msg-meta"], .metadata, .copyable-text:not(.selectable-text), span[dir="auto"]:last-child');
-          for (var k = 0; k < metas.length; k++) {
-              metas[k].remove();
-          }
+          for (var k = 0; k < metas.length; k++) metas[k].remove();
           text = clone.textContent;
       }
-      
-      text = text.trim();
-      // Secondary fallback: regex to strip trailing timestamp if still present
-      text = text.replace(/\s*\d{1,2}:\d{2}(\s*[ap]m)?$/i, '');
-      
-      if (!text || text.length < 2) continue;
+      text = text.trim().replace(/\s*\d{1,2}:\d{2}(\s*[ap]m)?$/i, '');
 
+      if (!text || text.length < 2) continue;
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
-      console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
       checkSelfChat().then(function(isSelf) {
         if (isSelf) {
-          console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
-          if (!handleCommand(text)) {
-            // Wait a tiny bit to make sure DOM settles before saving state
-            setTimeout(function() { saveNote(text); }, 200);
-          }
-        } else {
-            console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
+          if (!handleCommand(text)) { setTimeout(function() { saveNote(text); }, 200); }
         }
       });
     }
   }
 
   async function checkSelfChat() {
-    var main = document.querySelector('#main');
-    var header = (main && main.querySelector('header')) || 
-                 document.querySelector('[data-testid="conversation-header"]') || 
-                 document.querySelector('header[role="banner"]');
-    
-    if (!header) {
-        console.log('🤖 [SaveNote] Header not found in main pane.');
+    var main = document.querySelector('#main') || document.querySelector('[data-testid="conversation-panel-body"]') || document.querySelector('div[role="main"]');
+    if (!main) {
+        var allHeaders = document.querySelectorAll('header, [data-testid="conversation-header"], [role="banner"]');
+        for (var h = 0; h < allHeaders.length; h++) { if (isHeaderSelfChat(allHeaders[h])) return true; }
         return false;
     }
+    var header = main.querySelector('header') || main.querySelector('[data-testid="conversation-header"]') || main.querySelector('[role="banner"]') || document.querySelector('header');
+    if (!header) {
+        var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
+        for (var t = 0; t < possibleTitles.length; t++) {
+            var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
+            var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
+        }
+        return false;
+    }
+    return isHeaderSelfChat(header);
+  }
 
-    // Strategy 1: Check specific title elements
-    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
-                    header.querySelector('span[title]') ||
-                    header.querySelector('[data-testid="contact-name"]');
-    
+  function isHeaderSelfChat(header) {
+    if (header.dataset.snIsSelf === 'true') return true;
+    var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"], [data-testid="chat-title"]');
     if (titleEl) {
-        var title = titleEl.textContent || '';
-        var titleAttr = titleEl.getAttribute('title') || '';
-        var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var cleanAttr = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        
-        console.log('🤖 [SaveNote] Chat title text:', JSON.stringify(title), 'attr:', JSON.stringify(titleAttr));
-
-        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) {
-            return true;
-        }
+        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
+        var clean = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (title.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
     }
-
-    // Strategy 2: Scan ALL spans in the header for self-chat indicators
-    var allSpans = header.querySelectorAll('span');
-    for (var i = 0; i < allSpans.length; i++) {
-        var spanText = (allSpans[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var spanTitle = (allSpans[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (isSelfChatTitle(spanText) || isSelfChatTitle(spanTitle)) {
-            console.log('🤖 [SaveNote] Self-chat detected via header span scan:', allSpans[i].textContent);
-            return true;
-        }
-        // Check if any span contains the BOT_NAME (already hijacked)
-        if ((allSpans[i].textContent || '').includes(BOT_NAME)) {
-            return true;
-        }
+    var children = header.querySelectorAll('span, div[title]');
+    for (var i = 0; i < children.length; i++) {
+        var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) return true;
     }
-
-    // Strategy 3: Check the full header text as a last resort
-    var headerText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-    console.log('🤖 [SaveNote] Full header text:', JSON.stringify(headerText));
-    if (isSelfChatTitle(headerText) || headerText.includes(BOT_NAME.toLowerCase())) {
-        console.log('🤖 [SaveNote] Self-chat detected via full header text.');
-        return true;
-    }
-
-    // Strategy 4: Check if the hijacker has already marked a sidebar identity for this chat
-    var sidebarIdentities = document.querySelectorAll('.sn-sidebar-identity');
-    if (sidebarIdentities.length > 0) {
-        // Check if any sidebar identity element is highlighted/active (current chat)
-        for (var j = 0; j < sidebarIdentities.length; j++) {
-            var cell = sidebarIdentities[j].closest('[data-testid="cell-frame-container"]');
-            if (cell) {
-                var listItem = cell.closest('[aria-selected="true"], [data-testid="chat-list-item"]');
-                if (listItem && listItem.getAttribute('aria-selected') === 'true') {
-                    console.log('🤖 [SaveNote] Self-chat detected via active sidebar identity.');
-                    return true;
-                }
-            }
-        }
-    }
-
-    console.log('🤖 [SaveNote] Not a self-chat. No indicators found.');
     return false;
   }
 
-  // ===== Initialize =====
   function init() {
-    console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bot Mode activated`);
-    loadNotes().then(function() {
-      startObservers();
-    });
+    loadNotes().then(function() { startObservers(); });
   }
 
-  // Wait for DOM
-  if (document.readyState === 'complete') {
-    setTimeout(init, 2000);
-  } else {
-    window.addEventListener('load', function() { setTimeout(init, 2000); });
-  }
+  if (document.readyState === 'complete') { setTimeout(init, 2000); }
+  else { window.addEventListener('load', function() { setTimeout(init, 2000); }); }
 })();

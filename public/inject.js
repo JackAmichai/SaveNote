@@ -69,7 +69,7 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"]');
+    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
@@ -78,13 +78,23 @@
       var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
 
       if (selfChat) {
-        if (txt !== BOT_NAME) el.textContent = BOT_NAME;
+        if (txt !== BOT_NAME) {
+           el.textContent = BOT_NAME;
+        }
         if (!el.classList.contains('sn-sidebar-identity')) {
           el.classList.add('sn-sidebar-identity');
         }
-        var parent = el.closest('[data-testid="cell-frame-container"]') || el.closest('header');
+        
+        // Find parent container to hijack avatar
+        var parent = el.closest('[data-testid="cell-frame-container"]') || 
+                     el.closest('header') || 
+                     el.closest('[data-testid="conversation-header"]') ||
+                     el.closest('[role="banner"]');
+        
         if (parent) {
-          var avatarContainer = parent.querySelector('[data-testid="avatar-img-container"]');
+          parent.dataset.snIsSelf = 'true';
+          var avatarContainer = parent.querySelector('[data-testid="avatar-img-container"]') || 
+                                parent.querySelector('div[role="button"] img')?.parentElement;
           if (avatarContainer && !parent.dataset.snHijacked) {
             avatarContainer.innerHTML = BOT_SVG;
             parent.dataset.snHijacked = 'true';
@@ -130,7 +140,6 @@
 
   // ===== Bot Reply Injection =====
   function injectBotReply(html) {
-    // Find the scrollable message container
     var chatPane = document.querySelector('div[role="region"][aria-label="Message list"]') || 
                    document.querySelector('[data-testid="conversation-panel-body"]') || 
                    document.querySelector('[data-testid="conversation-panel-messages"]') ||
@@ -142,7 +151,6 @@
         return;
     }
 
-    // Detect dark mode
     var isDark = document.body.className.includes('dark') || 
                  document.body.getAttribute('data-theme') === 'dark';
 
@@ -154,7 +162,6 @@
 
     var nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Build the reply using fully inline styles (CSP-proof)
     var row = document.createElement('div');
     row.setAttribute('style', 'display:flex !important;flex-direction:column !important;width:100% !important;margin-bottom:2px !important;align-items:flex-start !important;');
 
@@ -191,20 +198,16 @@
     wrapper.appendChild(bubble);
     row.appendChild(wrapper);
 
-    // Find the best insertion point - the list container inside the chat pane
     var list = chatPane.querySelector('[role="list"]') || chatPane;
     if (list === chatPane && chatPane.firstElementChild) {
-        list = chatPane.firstElementChild; // Usually the actual flex container
+        list = chatPane.firstElementChild;
     }
     list.appendChild(row);
 
     console.log('🤖 [SaveNote] Bot reply injected successfully.');
 
-    // Scroll to bottom - try multiple scroll containers
     setTimeout(function() {
-      // The scroll container might be the chatPane itself or a parent
       var scrollContainer = chatPane;
-      // Walk up to find the actual scrollable element
       var el = chatPane;
       for (var i = 0; i < 5; i++) {
         if (el && el.scrollHeight > el.clientHeight) {
@@ -214,7 +217,6 @@
         el = el.parentElement;
       }
       scrollContainer.scrollTop = scrollContainer.scrollHeight + 1000;
-      // Also try the chatPane itself
       chatPane.scrollTop = chatPane.scrollHeight + 1000;
     }, 150);
   }
@@ -269,8 +271,6 @@
 
     for (var i = 0; i < msgContainers.length; i++) {
       var container = msgContainers[i];
-
-      // CRITICAL: Only process messages in the main conversation pane, skip sidebar last-message previews
       if (!container.closest('#main') && !container.closest('[data-testid="conversation-panel-body"]')) {
           continue;
       }
@@ -281,7 +281,6 @@
       var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
       
       var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
-
       if (!isOutgoing) continue;
 
       var textWrapper = container.querySelector('.selectable-text span') || 
@@ -290,11 +289,8 @@
                           container.querySelector('span.copyable-text') ||
                           container.querySelector('.copyable-text');
 
-      if (!textWrapper) {
-          textWrapper = container; // Ultimate fallback: just strip everything else
-      }
+      if (!textWrapper) { textWrapper = container; }
 
-      // Extract text and try to exclude timestamp
       var text = "";
       if (textWrapper.querySelector('span.selectable-text')) {
           text = textWrapper.querySelector('span.selectable-text').textContent;
@@ -308,17 +304,14 @@
       }
       
       text = text.trim();
-      // Secondary fallback: regex to strip trailing timestamp
       text = text.replace(/\s*\d{1,2}:\d{2}(\s*[ap]m)?$/i, '');
 
       if (!text || text.length < 2) continue;
-
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
       console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
 
       var isSelf = checkSelfChatSync();
-
       if (isSelf) {
           console.log('🤖 [SaveNote] Self-chat confirmed! Processing...');
           if (!handleCommand(text)) {
@@ -349,79 +342,69 @@
 
   // ===== Self-Chat Sync Check =====
   function checkSelfChatSync() {
-    var main = document.querySelector('#main');
-    var header = (main && main.querySelector('header')) || 
-                 document.querySelector('[data-testid="conversation-header"]') || 
-                 document.querySelector('header[role="banner"]');
+    var main = document.querySelector('#main') || 
+               document.querySelector('[data-testid="conversation-panel-body"]') || 
+               document.querySelector('div[role="main"]');
     
-    if (!header) {
-        console.log('🤖 [SaveNote] Header not found.');
+    if (!main) {
+        console.log('🤖 [SaveNote] Main chat pane not found.');
+        var allHeaders = document.querySelectorAll('header, [data-testid="conversation-header"], [role="banner"]');
+        for (var h = 0; h < allHeaders.length; h++) {
+            if (isHeaderSelfChat(allHeaders[h])) return true;
+        }
         return false;
     }
 
-    // Strategy 1: Check specific title elements
+    var header = main.querySelector('header') || 
+                 main.querySelector('[data-testid="conversation-header"]') || 
+                 main.querySelector('[role="banner"]') ||
+                 document.querySelector('header') || 
+                 document.querySelector('[data-testid="conversation-header"]');
+    
+    if (!header) {
+        console.log('🤖 [SaveNote] Header not found, searching main pane for title...');
+        var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
+        for (var t = 0; t < possibleTitles.length; t++) {
+            var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
+            var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+            if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
+        }
+        return false;
+    }
+
+    return isHeaderSelfChat(header);
+  }
+
+  function isHeaderSelfChat(header) {
+    if (header.dataset.snIsSelf === 'true') return true;
     var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
                     header.querySelector('span[title]') ||
-                    header.querySelector('[data-testid="contact-name"]');
+                    header.querySelector('[data-testid="contact-name"]') ||
+                    header.querySelector('[data-testid="chat-title"]');
     
     if (titleEl) {
         var title = titleEl.textContent || '';
         var titleAttr = titleEl.getAttribute('title') || '';
         var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
         var cleanAttr = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        
-        console.log('🤖 [SaveNote] Chat title text:', JSON.stringify(title), 'attr:', JSON.stringify(titleAttr));
-
-        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) {
-            return true;
-        }
+        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) return true;
     }
 
-    // Strategy 2: Scan ALL spans in header for self-chat indicators
-    var allSpans = header.querySelectorAll('span');
-    for (var i = 0; i < allSpans.length; i++) {
-        var spanText = (allSpans[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var spanTitle = (allSpans[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (isSelfChatTitle(spanText) || isSelfChatTitle(spanTitle)) {
-            console.log('🤖 [SaveNote] Self-chat detected via header span:', allSpans[i].textContent);
-            return true;
-        }
-        if ((allSpans[i].textContent || '').includes(BOT_NAME)) {
-            return true;
-        }
+    var children = header.querySelectorAll('span, div[title]');
+    for (var i = 0; i < children.length; i++) {
+        var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) return true;
     }
 
-    // Strategy 3: Check full header text
-    var headerText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-    console.log('🤖 [SaveNote] Full header text:', JSON.stringify(headerText));
-    if (isSelfChatTitle(headerText) || headerText.includes(BOT_NAME.toLowerCase())) {
-        console.log('🤖 [SaveNote] Self-chat detected via full header text.');
-        return true;
-    }
+    var fullText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    if (isSelfChatTitle(fullText) || fullText.includes(BOT_NAME.toLowerCase())) return true;
 
-    // Strategy 4: Check sidebar identity markers
-    var sidebarIdentities = document.querySelectorAll('.sn-sidebar-identity');
-    if (sidebarIdentities.length > 0) {
-        for (var j = 0; j < sidebarIdentities.length; j++) {
-            var cell = sidebarIdentities[j].closest('[data-testid="cell-frame-container"]');
-            if (cell) {
-                var listItem = cell.closest('[aria-selected="true"], [data-testid="chat-list-item"]');
-                if (listItem && listItem.getAttribute('aria-selected') === 'true') {
-                    console.log('🤖 [SaveNote] Self-chat detected via active sidebar identity.');
-                    return true;
-                }
-            }
-        }
-    }
-
-    console.log('🤖 [SaveNote] Not a self-chat. No indicators found.');
     return false;
   }
 
   // ===== Init =====
   setInterval(hijackIdentity, 1500);
-
-  // Fallback polling for reliable message interception
   setInterval(function() {
     processNewElements(document.getElementById('main') || document.body);
   }, 1000);
@@ -436,8 +419,6 @@
     }
   });
   
-  // Attach to body to ensure we don't miss #app name changes and re-renders
   observer.observe(document.body, { childList: true, subtree: true });
-  
   console.log(`🤖 ${BOT_NAME} Pixel-Perfect Native Bookmarklet Ready`);
 })();
