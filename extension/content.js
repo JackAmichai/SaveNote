@@ -86,18 +86,15 @@
 
   // ===== Self-Chat Detection Helper =====
   function isSelfChatTitle(cleanText) {
-    var selfStrings = [
-      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
-      'message yourself', 'הודעה לעצמך', 'שלח הודעה לעצמך',
-      'chat with yourself', 'notes to self', 'my notes',
-      'הערות לעצמי', 'מזכרות', 'יומן'
-    ];
+    if (!cleanText) return false;
+    var exact = ['you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה', 'message yourself', 'chat with yourself', 'notes to self', 'my notes'];
+    if (exact.includes(cleanText)) return true;
     
-    if (selfStrings.includes(cleanText)) return true;
-    for (var i = 0; i < selfStrings.length; i++) {
-      if (cleanText.includes(selfStrings[i])) return true;
-    }
-    return cleanText.endsWith(' you') || /\(you\)\s*$/.test(cleanText);
+    // Matches suffix formats like "+972 54... (You)"
+    if (cleanText.endsWith('(you)') || cleanText.endsWith('(את)') || cleanText.endsWith('(אני)') || cleanText.endsWith('(אתה)')) return true;
+    if (cleanText.endsWith(' you')) return true;
+    
+    return false;
   }
 
   // ===== UI: Bot Identity Hijacker =====
@@ -109,7 +106,8 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
+    // Only target actual titles, skip message previews
+    var chatTitles = document.querySelectorAll('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
@@ -264,9 +262,27 @@
     return false;
   }
 
+  var hasWelcomed = false;
+
   function startObservers() {
     setInterval(hijackIdentity, 1500);
-    setInterval(function() { processNewElements(document.getElementById('main') || document.body); }, 1000);
+    setInterval(function() { 
+        processNewElements(document.getElementById('main') || document.body); 
+        
+        // Try injecting welcome message
+        if (!hasWelcomed) {
+            checkSelfChat().then(function(isSelf) {
+                if (isSelf) {
+                    hasWelcomed = true;
+                    if (notes.length < 2) {
+                        setTimeout(function() {
+                            injectBotReply(`👋 <strong>Welcome to SaveNote AI!</strong><br><br>I'm your personal memory assistant. Just message me anything you want to remember (like a book, a parking spot, or an idea).<br><br>Type <strong>help</strong> to see what else I can do!`);
+                        }, 1000);
+                    }
+                }
+            });
+        }
+    }, 1000);
     var observer = new MutationObserver(function(mutations) {
       for (var i = 0; i < mutations.length; i++) {
         var mutation = mutations[i];
