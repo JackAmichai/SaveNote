@@ -6,6 +6,62 @@
 (function () {
   'use strict';
 
+  // ===== Instructions UI =====
+  function showInstructions() {
+    var id = 'sn-instructions-overlay';
+    if (document.getElementById(id)) return;
+
+    var overlay = document.createElement('div');
+    overlay.id = id;
+    overlay.setAttribute('style', 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;');
+    
+    var modal = document.createElement('div');
+    modal.setAttribute('style', 'background:white;width:90%;max-width:450px;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.3);animation:sn-pop 0.3s ease-out;');
+    
+    var header = document.createElement('div');
+    header.setAttribute('style', 'background:#008069;color:white;padding:20px;text-align:center;');
+    header.innerHTML = '<h2 style="margin:0;font-size:22px;">💬 SaveNote AI Active</h2>';
+    
+    var content = document.createElement('div');
+    content.setAttribute('style', 'padding:25px;color:#3b4a54;line-height:1.6;');
+    content.innerHTML = `
+      <p style="margin-top:0;font-weight:600;font-size:16px;">How to use your memory assistant:</p>
+      <div style="margin-bottom:15px;">
+        <strong style="color:#008069;">1. Save Memories</strong><br>
+        Just send yourself a message like: <br>
+        <em style="color:#667781;">"I parked on level 3 section B"</em>
+      </div>
+      <div style="margin-bottom:15px;">
+        <strong style="color:#008069;">2. Recall Instantly</strong><br>
+        Ask a question anytime: <br>
+        <em style="color:#667781;">"Where did I park my car?"</em>
+      </div>
+      <div style="margin-bottom:20px;background:#f0f2f5;padding:10px;border-radius:8px;font-size:13px;">
+        💡 <strong>Pro Tip:</strong> Click the bookmark again while in any chat to <strong>Force Activate</strong> SaveNote for that specific conversation.
+      </div>
+    `;
+    
+    var footer = document.createElement('div');
+    footer.setAttribute('style', 'padding:0 25px 25px;text-align:center;');
+    
+    var btn = document.createElement('button');
+    btn.textContent = 'Got it, thanks!';
+    btn.setAttribute('style', 'background:#008069;color:white;border:none;padding:12px 30px;border-radius:24px;font-weight:600;cursor:pointer;font-size:15px;width:100%;');
+    btn.onclick = function() { overlay.remove(); };
+    
+    // Add CSS animation
+    var style = document.createElement('style');
+    style.innerHTML = '@keyframes sn-pop { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }';
+    document.head.appendChild(style);
+
+    footer.appendChild(btn);
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(footer);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
   // If already loaded, clicking again acts as "Force Activation" for the current chat
   if (window.__savenote_loaded) {
     console.log('🤖 [SaveNote] Re-clicked! Forcing activation for current chat...');
@@ -14,7 +70,7 @@
     if (header) {
         header.dataset.snIsSelf = 'true';
         console.log('🤖 [SaveNote] Current chat FORCED to Bot Mode.');
-        alert('SaveNote AI Activated for this chat!');
+        showInstructions();
     }
     return;
   }
@@ -370,7 +426,6 @@
             var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
             if (txt.indexOf(BOT_NAME) !== -1 || isSelfChatTitle(clean)) return true;
         }
-        // Strategy 4: Check the message input placeholder
         var input = main.querySelector('footer div[contenteditable="true"]');
         if (input) {
             var placeholder = (input.getAttribute('aria-label') || input.textContent || '').toLowerCase();
@@ -426,5 +481,7 @@
   });
   
   observer.observe(document.body, { childList: true, subtree: true });
-  console.log(`🤖 ${BOT_NAME} Ready. Click bookmark again while in a chat to FORCE activate.`);
+  
+  console.log(`🤖 ${BOT_NAME} Initialized.`);
+  showInstructions();
 })();
