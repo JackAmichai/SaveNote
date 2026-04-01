@@ -102,17 +102,15 @@
 
   // Self-chat detection helper
   function isSelfChatTitle(cleanText) {
-    var selfStrings = [
-      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
-      'message yourself', 'הודעה לעצמך', 'שלח הודעה לעצמך',
-      'chat with yourself', 'notes to self', 'my notes',
-      'הערות לעצמי', 'מזכרות', 'יומן'
-    ];
-    if (selfStrings.includes(cleanText)) return true;
-    for (var i = 0; i < selfStrings.length; i++) {
-      if (cleanText.indexOf(selfStrings[i]) !== -1) return true;
-    }
-    return cleanText.endsWith(' you') || /\(you\)\s*$/.test(cleanText);
+    if (!cleanText) return false;
+    var exact = ['you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה', 'message yourself', 'chat with yourself', 'notes to self', 'my notes'];
+    if (exact.includes(cleanText)) return true;
+    
+    // Matches suffix formats like "+972 54... (You)"
+    if (cleanText.endsWith('(you)') || cleanText.endsWith('(את)') || cleanText.endsWith('(אני)') || cleanText.endsWith('(אתה)')) return true;
+    if (cleanText.endsWith(' you')) return true;
+    
+    return false;
   }
   
   function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
@@ -133,8 +131,12 @@
       document.body.setAttribute('data-theme', 'light');
     }
 
-    var chatTitles = document.querySelectorAll('span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
+    var chatTitles = document.querySelectorAll('[data-testid="cell-frame-title"] span[title], [data-testid="contact-name"], [data-testid="conversation-info-header-chat-title"], [data-testid="chat-title"]');
     chatTitles.forEach(function(el) {
+      if (el.closest('[data-testid="chat-list"]') && !el.closest('[aria-selected="true"]')) {
+          // Only attempt to forcefully change the *active* sidebar item if necessary, to avoid lag.
+          // But it's okay to let it replace it if we really want to. For now, do it everywhere.
+      }
       var txt = el.textContent || '';
       var titleAttr = el.getAttribute('title') || '';
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
@@ -226,22 +228,33 @@
     row.setAttribute('style', 'display:flex !important;flex-direction:column !important;width:100% !important;margin-bottom:2px !important;align-items:flex-start !important;');
 
     var wrapper = document.createElement('div');
-    wrapper.setAttribute('style', 'position:relative !important;display:flex !important;max-width:65% !important;margin-left:63px !important;margin-bottom:8px !important;margin-top:8px !important;');
+    wrapper.setAttribute('style', 'position:relative !important;display:flex !important;max-width:85% !important;margin-left:63px !important;margin-bottom:8px !important;margin-top:8px !important;');
 
     var tail = document.createElement('span');
     tail.setAttribute('style', 'position:absolute !important;top:0 !important;left:-8px !important;width:8px !important;height:13px !important;color:' + tailColor + ' !important;z-index:100 !important;display:block !important;');
     tail.innerHTML = TAIL_SVG;
 
     var bubble = document.createElement('div');
-    bubble.setAttribute('style', 'background-color:' + bubbleBg + ' !important;border-radius:0 7.5px 7.5px 7.5px !important;padding:6px 7px 8px 9px !important;box-shadow:0 1px 0.5px rgba(11,20,26,0.13) !important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:flex !important;flex-direction:column !important;min-width:120px !important;max-width:100% !important;');
+    bubble.setAttribute('style', 'background-color:' + bubbleBg + ' !important;border-radius:0 7.5px 7.5px 7.5px !important;padding:6px 7px 8px 9px !important;box-shadow:0 1px 0.5px rgba(11,20,26,0.13) !important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:flex !important;flex-direction:column !important;min-width:160px !important;max-width:100% !important;');
 
     var name = document.createElement('div');
     name.setAttribute('style', 'font-size:12.8px !important;font-weight:500 !important;color:' + nameColor + ' !important;margin-bottom:2px !important;line-height:22px !important;display:block !important;');
     name.textContent = BOT_NAME;
 
     var text = document.createElement('div');
-    text.setAttribute('style', 'word-break:break-word !important;white-space:pre-wrap !important;margin-bottom:4px !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:19px !important;display:block !important;');
-    text.innerHTML = html;
+    text.setAttribute('style', 'word-break:break-word !important;white-space:pre-wrap !important;margin-bottom:4px !important;color:' + bubbleColor + ' !important;font-size:14.2px !important;line-height:1.4 !important;display:block !important;');
+    
+    // Process category pills inside text
+    var processedHtml = html;
+    if (html.includes('[category-pill]')) {
+      var badgeStyle = isDark ? 
+        'background:rgba(255,255,255,0.1);color:#00a884;' : 
+        'background:rgba(0,128,105,0.08);color:#008069;border:1px solid rgba(0,128,105,0.1);';
+      var badgeHtml = `<span style="display:inline-block;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;text-transform:uppercase;margin-left:8px;vertical-align:middle;${badgeStyle}">$1</span>`;
+      processedHtml = html.replace(/\[category-pill\](.*?)\[\/category-pill\]/g, badgeHtml);
+    }
+    
+    text.innerHTML = processedHtml;
 
     var meta = document.createElement('div');
     meta.setAttribute('style', 'display:flex !important;justify-content:flex-end !important;align-items:center !important;float:right !important;margin-left:14px !important;');
@@ -286,47 +299,66 @@
     var lower = text.toLowerCase();
     var notes = loadNotes();
     
-    if (lower.indexOf('what') !== -1 && lower.indexOf('book') !== -1) {
-      var books = notes.filter(function(n) { return n.category === 'book'; });
-      simulateTyping();
-      setTimeout(function() {
-          if (books.length === 0) injectBotReply("📚 You haven't saved any books yet.");
-          else injectBotReply(`📚 <strong>Here are your books:</strong><br>${books.slice(0, 5).map(function(b) { return '• ' + b.summary; }).join('<br>')}`);
-      }, 1500);
-      return true;
-    }
-    if (lower.indexOf('where') !== -1 && lower.indexOf('park') !== -1) {
-      var p = notes.find(function(n) { return n.category === 'parking'; });
-      simulateTyping();
-      setTimeout(function() {
-          if (!p) injectBotReply("🅿️ No parking spot found.");
-          else injectBotReply(`🅿️ <strong>Last parking spot:</strong><br>"${p.raw_message}"`);
-      }, 1500);
-      return true;
-    }
-    if (lower.indexOf('what') !== -1 && lower.indexOf('shopping') !== -1) {
-      var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
-      simulateTyping();
-      setTimeout(function() {
-          if (shopping.length === 0) injectBotReply("🛒 Shopping list empty.");
-          else injectBotReply(`🛒 <strong>Shopping list:</strong><br>${shopping.map(function(s) { return '• ' + s.summary; }).join('<br>')}`);
-      }, 1500);
-      return true;
-    }
-    if (lower.match(/\b(help|hi|hello)\b/)) {
+    // Help & Conversational
+    if (lower.match(/\b(how do i|interact|what can you do|features|how to use|help|hi|hello)\b/)) {
         simulateTyping();
         setTimeout(function() {
-            injectBotReply(`👋 Hi, I'm ${BOT_NAME}. Message me anything to remember it.<br><br>Ask me:<br>• What books did I read?<br>• Where did I park?`);
+            injectBotReply(`👋 <strong>Hi, I'm ${BOT_NAME}.</strong><br><br>I organize your thoughts using AI. Just message me anything you want to remember:<br><i>"I parked on level 3"</i><br><br>Later, you can just ask me:<br><i>"Where did I park?"</i>`);
         }, 1500);
         return true;
     }
+    
+    // Broad Book Query
+    if (lower.match(/\b(what|which|show|list)\b.*?\b(book|read|reading)\b/)) {
+      var books = notes.filter(function(n) { return n.category === 'book'; });
+      simulateTyping();
+      setTimeout(function() {
+          if (books.length === 0) injectBotReply("📚 You haven't saved any books yet. Send me a title to get started!");
+          else injectBotReply(`📚 <strong>Your reading list:</strong><br><br>${books.slice(0, 5).map(function(b, i) { return (i+1) + '. ' + b.summary; }).join('<br>')}`);
+      }, 1500);
+      return true;
+    }
+    
+    // Broad Parking/Location Query
+    if (lower.match(/\b(where|what|show)\b.*?\b(park|parked|car|location)\b/)) {
+      var p = notes.find(function(n) { return n.category === 'parking' || n.category === 'location'; });
+      simulateTyping();
+      setTimeout(function() {
+          if (!p) injectBotReply("🅿️ No parking spot or location found. Did you forget to tell me?");
+          else injectBotReply(`🔍 <strong>Here's what I found:</strong><br><br>${CATEGORY_EMOJI[p.category]} ${p.summary}`);
+      }, 1500);
+      return true;
+    }
+    
+    // Broad Idea Query
+    if (lower.match(/\b(what|show|list)\b.*?\b(idea|thoughts)\b/)) {
+      var ideas = notes.filter(function(n) { return n.category === 'idea'; });
+      simulateTyping();
+      setTimeout(function() {
+          if (ideas.length === 0) injectBotReply("💡 No ideas saved yet.");
+          else injectBotReply(`💡 <strong>Your recent ideas:</strong><br><br>${ideas.slice(0, 5).map(function(i, idx) { return (idx+1) + '. ' + i.summary; }).join('<br>')}`);
+      }, 1500);
+      return true;
+    }
+
+    // Broad Shopping Query
+    if (lower.match(/\b(what|show|list)\b.*?\b(shop|shopping|buy|list)\b/)) {
+      var shopping = notes.filter(function(n) { return n.category === 'shopping'; });
+      simulateTyping();
+      setTimeout(function() {
+          if (shopping.length === 0) injectBotReply("🛒 Shopping list is empty.");
+          else injectBotReply(`🛒 <strong>Shopping list:</strong><br><br>${shopping.map(function(s, i) { return (i+1) + '. ' + s.summary; }).join('<br>')}`);
+      }, 1500);
+      return true;
+    }
+
     return false;
   }
 
   function processNewElements(el) {
     var msgContainers = el.querySelectorAll ? [
-      ...el.querySelectorAll('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in'),
-      ...(el.matches && el.matches('[data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in') ? [el] : []),
+      ...el.querySelectorAll('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in'),
+      ...(el.matches && el.matches('[role="row"], [data-testid="msg-container"], [data-testid="msg-row"], div[data-id], .message-out, .message-in') ? [el] : []),
     ] : [];
 
     for (var i = 0; i < msgContainers.length; i++) {
@@ -335,10 +367,13 @@
           continue;
       }
 
-      var dataId = container.getAttribute('data-id');
+      var innerDataElem = container.querySelector('div[data-id]') || container;
+      var dataId = innerDataElem.getAttribute('data-id');
       var isOutgoingId = dataId && dataId.indexOf('true_') === 0;
-      var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out');
-      var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || container.querySelector('[data-icon="msg-check"]');
+      var isOutgoingClass = container.closest('.message-out') || container.classList.contains('message-out') || container.querySelector('.message-out');
+      var hasOutgoingCheck = container.querySelector('[data-icon="msg-dblcheck"]') || 
+                             container.querySelector('[data-icon="msg-check"]') || 
+                             container.querySelector('[data-icon="msg-time"]'); // Catch early before sent
       
       var isOutgoing = isOutgoingId || isOutgoingClass || hasOutgoingCheck;
       if (!isOutgoing) continue;
@@ -389,7 +424,7 @@
                       saveNotes(notesArr);
                       simulateTyping();
                       setTimeout(function() {
-                          injectBotReply(`✅ Got it! Saved under <strong>${cat}</strong> ${CATEGORY_EMOJI[cat]}<br><small>"${t}"</small>`);
+                          injectBotReply(`${CATEGORY_EMOJI[cat]} Got it! Saved under <strong>${cat}</strong>:<br><i>"${t}"</i> [category-pill]${cat}[/category-pill]`);
                       }, 1500);
                   }, 200);
               })(text);
