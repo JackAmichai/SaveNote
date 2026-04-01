@@ -36,19 +36,20 @@
 
   // Self-chat detection helper
   function isSelfChatTitle(cleanText) {
-    return cleanText === 'you' ||
-           cleanText === '(you)' ||
-           cleanText === 'me' ||
-           cleanText === 'yourself' ||
-           cleanText === 'אני' ||
-           cleanText.includes('(you)') ||
-           cleanText.includes('(את)') ||
-           cleanText.includes('(אני)') ||
-           cleanText.includes('(אתה)') ||
-           cleanText.includes('chat with yourself') ||
-           cleanText.includes('notes to self') ||
-           cleanText.endsWith(' you') ||
-           /\(you\)\s*$/.test(cleanText);
+    var selfStrings = [
+      'you', '(you)', 'me', 'yourself', 'אני', 'את', 'אתה',
+      'message yourself', 'הודעה לעצמך', 'שלח הודעה לעצמך',
+      'chat with yourself', 'notes to self', 'my notes',
+      'הערות לעצמי', 'מזכרות', 'יומן'
+    ];
+    
+    if (selfStrings.includes(cleanText)) return true;
+    
+    for (var i = 0; i < selfStrings.length; i++) {
+      if (cleanText.includes(selfStrings[i])) return true;
+    }
+    
+    return cleanText.endsWith(' you') || /\(you\)\s*$/.test(cleanText);
   }
   
   function categorize(t){for(var k in CATEGORY_KEYWORDS)if(CATEGORY_KEYWORDS[k].test(t))return k;return 'other';}
@@ -75,6 +76,7 @@
       var titleAttr = el.getAttribute('title') || '';
       var cleanTx = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
       var cleanTitle = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+      
       var selfChat = isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanTitle) || txt.includes(BOT_NAME);
 
       if (selfChat) {
@@ -85,7 +87,6 @@
           el.classList.add('sn-sidebar-identity');
         }
         
-        // Find parent container to hijack avatar
         var parent = el.closest('[data-testid="cell-frame-container"]') || 
                      el.closest('header') || 
                      el.closest('[data-testid="conversation-header"]') ||
@@ -147,7 +148,7 @@
                    document.querySelector('#main .copyable-area');
 
     if (!chatPane) {
-        console.log('🤖 [SaveNote] Chat pane not found for reply injection.');
+        console.log('🤖 [SaveNote] Chat pane not found.');
         return;
     }
 
@@ -309,7 +310,7 @@
       if (!text || text.length < 2) continue;
       if (lastProcessedMessages.has(text)) continue;
       lastProcessedMessages.add(text);
-      console.log('🤖 [SaveNote] Intercepted new outgoing message:', text);
+      console.log('🤖 [SaveNote] Intercepted outgoing message:', text);
 
       var isSelf = checkSelfChatSync();
       if (isSelf) {
@@ -335,7 +336,7 @@
               })(text);
           }
       } else {
-          console.log('🤖 [SaveNote] Not a self-chat. Skipping.');
+          console.log('🤖 [SaveNote] NOT a self-chat. (Header title was likely not recognized)');
       }
     }
   }
@@ -362,11 +363,12 @@
                  document.querySelector('[data-testid="conversation-header"]');
     
     if (!header) {
-        console.log('🤖 [SaveNote] Header not found, searching main pane for title...');
+        console.log('🤖 [SaveNote] Header element not found inside main pane.');
         var possibleTitles = main.querySelectorAll('[data-testid="conversation-info-header-chat-title"], span[title], [data-testid="contact-name"]');
         for (var t = 0; t < possibleTitles.length; t++) {
             var txt = possibleTitles[t].textContent || possibleTitles[t].getAttribute('title') || '';
             var clean = txt.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+            console.log('🤖 [SaveNote] Checking possible title:', clean);
             if (txt.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
         }
         return false;
@@ -377,27 +379,31 @@
 
   function isHeaderSelfChat(header) {
     if (header.dataset.snIsSelf === 'true') return true;
+    
     var titleEl = header.querySelector('[data-testid="conversation-info-header-chat-title"]') ||
                     header.querySelector('span[title]') ||
                     header.querySelector('[data-testid="contact-name"]') ||
                     header.querySelector('[data-testid="chat-title"]');
     
     if (titleEl) {
-        var title = titleEl.textContent || '';
-        var titleAttr = titleEl.getAttribute('title') || '';
-        var cleanTx = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        var cleanAttr = titleAttr.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (title.includes(BOT_NAME) || isSelfChatTitle(cleanTx) || isSelfChatTitle(cleanAttr)) return true;
+        var title = titleEl.textContent || titleEl.getAttribute('title') || '';
+        var clean = title.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+        console.log('🤖 [SaveNote] Header title found:', JSON.stringify(clean));
+        if (title.includes(BOT_NAME) || isSelfChatTitle(clean)) return true;
     }
 
-    var children = header.querySelectorAll('span, div[title]');
+    var children = header.querySelectorAll('span, div[title], div[role="button"]');
     for (var i = 0; i < children.length; i++) {
         var text = (children[i].textContent || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
         var attr = (children[i].getAttribute('title') || '').replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
-        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) return true;
+        if (isSelfChatTitle(text) || isSelfChatTitle(attr) || text.includes(BOT_NAME.toLowerCase())) {
+            console.log('🤖 [SaveNote] Self-chat detected in header child:', text || attr);
+            return true;
+        }
     }
 
     var fullText = header.textContent.replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim().toLowerCase();
+    console.log('🤖 [SaveNote] Full header text:', fullText);
     if (isSelfChatTitle(fullText) || fullText.includes(BOT_NAME.toLowerCase())) return true;
 
     return false;
