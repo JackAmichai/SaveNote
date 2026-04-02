@@ -1,54 +1,30 @@
 /**
  * SaveNote — WhatsApp Web Content Script
- * New Injection Method: Assimilated UI Panel
+ * Final Version: Search/Recall Logic + Command Support
  */
 
 (function () {
   'use strict';
 
-  // Prevent multiple injections
-  if (window.__savenote_loaded) return;
-  window.__savenote_loaded = true;
+  if (window.__savenote_loaded_v4) return;
+  window.__savenote_loaded_v4 = true;
 
   // ===== Configuration =====
+  var BOT_NAME = 'SaveNote AI';
+  var BOT_COLOR = '#008069';
+  var BOT_SVG = `<svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
+
   var CATEGORY_EMOJI = {
     book: '📚', parking: '🅿️', idea: '💡', reminder: '⏰',
     location: '📍', person: '👤', recipe: '🍳', health: '🏥',
     finance: '💰', shopping: '🛒', other: '📌',
   };
 
-  var BOT_NAME = 'SaveNote AI';
-  var BOT_COLOR = '#008069';
-  var BOT_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="12" fill="${BOT_COLOR}"/><path d="M12.013 5.013c4.105 0 7.435 3.328 7.435 7.435 0 4.104-3.33 7.434-7.435 7.434-1.306 0-2.538-.337-3.624-.93l-3.835 1.005 1.017-3.738a7.39 7.39 0 0 1-.993-3.705c0-4.107 3.33-7.435 7.435-7.435z" fill="white"/></svg>`;
-  var TAIL_SVG = `<svg viewBox="0 0 8 13" width="8" height="13" class=""><path opacity=".13" fill="#0000000" d="M1.533 3.568 8 12.193V1H2.812C1.042 1 .474 2.156 1.533 3.568z"></path><path fill="currentColor" d="M1.533 2.568 8 11.193V0H2.812C1.042 0 .474 1.156 1.533 2.568z"></path></svg>`;
-
-  var CATEGORY_KEYWORDS = {
-    parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
-    book: /\b(book|read|reading|author|novel|chapter|finished|started|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
-    idea: /\b(idea|thought|maybe|what if|concept|brainstorm|should try|רעיון|אולי|מה אם)\b/i,
-    reminder: /\b(remind|remember|don't forget|todo|task|buy|call|schedule|תזכורת|לזכור|לקנות|פגישה)\b/i,
-    location: /\b(place|address|street|restaurant|cafe|bar|shop|found a|מקום|כתובת|מסעדה|רחוב)\b/i,
-    person: /\b(met |person|name is|works at|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
-    recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|מתכון|בישול|אוכל)\b/i,
-    health: /\b(health|doctor|medicine|symptom|hospital|vitamin|רופא|בריאות|תרופה)\b/i,
-    finance: /\b(money|pay|paid|cost|price|expense|bank|כסף|שילמתי|עלות|הוצאה)\b/i,
-    shopping: /\b(shop|shopping|buy|groceries|supermarket|market|shoes|clothes|קניות|סופר|לקנות)\b/i
-  };
-
   var notes = [];
-
-  // ===== State =====
   var isPanelOpen = false;
+  var ui = { sidebarButton: null, panel: null, messageList: null, input: null };
 
-  // ===== UI Elements =====
-  var ui = {
-    sidebarButton: null,
-    panel: null,
-    messageList: null,
-    input: null,
-  };
-
-  // ===== Storage & Logic =====
+  // ===== Storage Logic =====
   async function loadNotes() {
     return new Promise(function(resolve) {
       chrome.storage.local.get(['notes'], function(data) {
@@ -58,94 +34,107 @@
     });
   }
 
+  function saveNoteToStorage(note) {
+    notes.unshift(note);
+    chrome.storage.local.set({ notes: notes });
+  }
+
+  // ===== Search & AI Logic =====
   function categorize(text) {
-    for (var category in CATEGORY_KEYWORDS) {
-      if (CATEGORY_KEYWORDS[category].test(text)) return category;
-    }
+    var kws = {
+      parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
+      book: /\b(book|read|reading|author|novel|chapter|finished|started|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
+      idea: /\b(idea|thought|maybe|what if|concept|brainstorm|should try|רעיון|אולי|מה אם)\b/i,
+      reminder: /\b(remind|remember|don't forget|todo|task|buy|call|schedule|תזכורת|לזכור|לקנות|פגישה)\b/i,
+      shopping: /\b(shop|shopping|buy|groceries|supermarket|market|shoes|clothes|קניות|סופר|לקנות)\b/i,
+    };
+    for (var k in kws) if (kws[k].test(text)) return k;
     return 'other';
   }
 
-  async function saveNote(text) {
-    if (!text.trim()) return;
-    var category = categorize(text);
+  function searchNotes(query) {
+    var lower = query.toLowerCase();
+    // Look for category or keyword matches
+    var category = categorize(lower);
     
-    return new Promise(function(resolve) {
-      chrome.runtime.sendMessage({
-        type: 'SAVE_NOTE',
-        category: category,
-        summary: text.length > 120 ? text.substring(0, 117) + '...' : text,
-        raw_message: text,
-      }, function(response) {
-        if (response && response.success) {
-          notes.unshift(response.note);
-          appendUserMessage(text);
-          simulateTyping();
-          setTimeout(function() {
-            appendBotReply(`${CATEGORY_EMOJI[category]} Got it! Saved under <strong>${category}</strong>:<br><i>"${text}"</i>`);
-            resolve(response.note);
-          }, 1000);
-        }
-      });
+    return notes.filter(function(n) {
+      return n.category === category || n.raw_message.toLowerCase().includes(lower.replace(/\b(where|what|is|my|show|me)\b/gi, '').trim());
     });
   }
 
-  function handleCommand(text) {
+  async function handleInput(text) {
+    if (!text.trim()) return;
+    appendMessage('user', text);
+    simulateTyping();
+
     var lower = text.toLowerCase();
     
-    if (lower.match(/\b(help|hi|hello)\b/)) {
-        simulateTyping();
-        setTimeout(function() {
-            appendBotReply(`👋 <strong>Hi, I'm ${BOT_NAME}.</strong><br><br>I organize your thoughts using AI. Just message me anything you want to remember:<br><i>"I parked on level 3"</i><br><br>Later, you can just ask me:<br><i>"Where did I park?"</i>`);
-        }, 1200);
-        return true;
-    }
-    
-    if (lower.match(/\b(what|which|show|list)\b.*?\b(book|read|reading)\b/)) {
-      var books = notes.filter(function(n) { return n.category === 'book'; });
-      simulateTyping();
+    // Command: Return / Query
+    if (lower.startsWith('return ') || lower.startsWith('query ') || lower.includes('where') || lower.includes('what') || lower.includes('show')) {
+      var query = lower.replace(/^(return|query)\s+/i, '');
+      var results = searchNotes(query);
+      
       setTimeout(function() {
-          if (books.length === 0) appendBotReply("📚 You haven't saved any books yet.");
-          else appendBotReply(`📚 <strong>Your reading list:</strong><br><br>${books.slice(0, 5).map(function(b, i) { return (i+1) + '. ' + b.summary; }).join('<br>')}`);
-      }, 1200);
-      return true;
+        if (results.length > 0) {
+          var resMsg = `🔍 <strong>Found ${results.length} results:</strong><br><br>` + 
+                       results.slice(0, 3).map(function(r) { 
+                         return `${CATEGORY_EMOJI[r.category]} "${r.raw_message}"`; 
+                       }).join('<br><br>');
+          appendMessage('bot', resMsg);
+        } else {
+          appendMessage('bot', `❌ I couldn't find anything about that. Try being more specific!`);
+        }
+      }, 1000);
+      return;
     }
-    
-    // ... additional commands can be added here
-    return false;
+
+    // Command: Post / Save
+    var contentToSave = lower.startsWith('post ') ? text.substring(5) : text;
+    var cat = categorize(contentToSave);
+
+    setTimeout(function() {
+      var newNote = {
+        id: Date.now(),
+        category: cat,
+        raw_message: contentToSave,
+        created_at: new Date().toISOString()
+      };
+      saveNoteToStorage(newNote);
+      appendMessage('bot', `${CATEGORY_EMOJI[cat]} <strong>Saved!</strong> I've added this to your <strong>${cat}</strong> list.<br><br>Ask me "where" or "what" anytime to recall it.`);
+    }, 1000);
   }
 
-  // ===== UI: Assimilated Panel =====
+  // ===== UI Components =====
 
   function createSidebarButton() {
+    if (document.getElementById('sn-sidebar-btn')) return;
+
     var header = document.querySelector('header[data-testid="chat-list-header"]') || 
-                 document.querySelector('header') ||
-                 document.querySelector('#side header');
+                 document.querySelector('#side header') ||
+                 document.querySelector('div[data-testid="side"] header');
     
-    if (!header || document.getElementById('sn-sidebar-btn')) return;
+    if (!header) return;
 
-    var btnContainer = document.createElement('div');
-    btnContainer.id = 'sn-sidebar-btn';
-    btnContainer.title = 'Open SaveNote AI';
-    btnContainer.setAttribute('style', 'cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-left:8px;border-radius:50%;transition:background 0.2s;');
-    btnContainer.onmouseover = function() { this.style.background = 'rgba(0,0,0,0.05)'; };
-    btnContainer.onmouseout = function() { this.style.background = 'transparent'; };
+    var btn = document.createElement('div');
+    btn.id = 'sn-sidebar-btn';
+    btn.setAttribute('style', 'cursor:pointer !important; width:40px !important; height:40px !important; display:flex !important; align-items:center !important; justify-content:center !important; border-radius:50% !important; margin: 0 4px !important; transition: background 0.2s !important; z-index: 2000 !important; pointer-events: all !important;');
+    btn.innerHTML = BOT_SVG;
+    btn.title = 'Open SaveNote AI';
     
-    var icon = document.createElement('div');
-    icon.style.width = '24px';
-    icon.style.height = '24px';
-    icon.innerHTML = BOT_SVG;
-    
-    btnContainer.appendChild(icon);
-    btnContainer.onclick = togglePanel;
+    btn.addEventListener('click', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        togglePanel();
+    }, true);
 
-    // Find a place to insert: usually next to Status or New Chat icon
-    var iconsRow = header.querySelector('div[role="button"]')?.parentElement;
-    if (iconsRow) {
-        iconsRow.insertBefore(btnContainer, iconsRow.firstChild);
+    var container = header.querySelector('[data-testid="status-v3"]') || 
+                    header.querySelector('div[role="button"]')?.parentElement || 
+                    header;
+    
+    if (container !== header) {
+        container.parentElement.insertBefore(btn, container);
     } else {
-        header.appendChild(btnContainer);
+        header.appendChild(btn);
     }
-    ui.sidebarButton = btnContainer;
   }
 
   function createPanel() {
@@ -158,43 +147,34 @@
 
     var panel = document.createElement('div');
     panel.id = 'sn-chat-panel';
-    panel.setAttribute('style', `position:absolute;top:0;right:0;width:100%;height:100%;z-index:1000;display:none;flex-direction:column;background:${bgColor};animation:sn-slide-in 0.3s ease-out;`);
+    panel.setAttribute('style', `position:fixed !important; top:0 !important; right:0 !important; width:calc(100% - 410px) !important; height:100% !important; z-index:10000 !important; display:none; flex-direction:column !important; background:${bgColor} !important; box-shadow: -4px 0 15px rgba(0,0,0,0.15) !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;`);
     
-    // Header
-    var header = document.createElement('div');
-    header.setAttribute('style', `background:${headerColor};padding:10px 16px;display:flex;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,0.1);z-index:10;`);
-    
-    var avatar = document.createElement('div');
-    avatar.setAttribute('style', 'width:40px;height:40px;border-radius:50%;overflow:hidden;margin-right:15px;');
-    avatar.innerHTML = BOT_SVG;
+    if (window.innerWidth < 900) panel.style.width = '100%';
 
-    var titleInfo = document.createElement('div');
-    titleInfo.style.flex = '1';
-    titleInfo.innerHTML = `<div style="font-weight:500;color:${textColor};font-size:16px;">${BOT_NAME}</div><div id="sn-status" style="font-size:13px;color:#667781;">online</div>`;
+    var h = document.createElement('div');
+    h.setAttribute('style', `background:${headerColor} !important; padding:10px 16px !important; display:flex !important; align-items:center !important; height:60px !important; border-bottom:1px solid rgba(0,0,0,0.08) !important; box-sizing:border-box !important;`);
+    h.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;margin-right:15px;background:white;display:flex;align-items:center;justify-content:center;">${BOT_SVG}</div>
+        <div style="flex:1;">
+            <div style="font-weight:600;color:${textColor};font-size:16px;">${BOT_NAME}</div>
+            <div id="sn-status" style="font-size:13px;color:#00a884;">online</div>
+        </div>
+        <div id="sn-close" style="cursor:pointer;font-size:24px;color:#667781;padding:5px 10px;line-height:1;">✕</div>
+    `;
+    h.querySelector('#sn-close').onclick = togglePanel;
 
-    var closeBtn = document.createElement('div');
-    closeBtn.innerHTML = '✕';
-    closeBtn.setAttribute('style', `cursor:pointer;font-size:20px;color:#667781;padding:5px 10px;`);
-    closeBtn.onclick = togglePanel;
-
-    header.appendChild(avatar);
-    header.appendChild(titleInfo);
-    header.appendChild(closeBtn);
-
-    // Message List
     var list = document.createElement('div');
     list.id = 'sn-message-list';
-    list.setAttribute('style', 'flex:1;overflow-y:auto;padding:20px 5%;display:flex;flex-direction:column;');
+    list.setAttribute('style', 'flex:1 !important; overflow-y:auto !important; padding:20px 8% !important; display:flex !important; flex-direction:column !important; scroll-behavior: smooth !important;');
     
-    // Footer
-    var footer = document.createElement('div');
-    footer.setAttribute('style', `background:${headerColor};padding:10px 16px;display:flex;align-items:center;`);
+    var f = document.createElement('div');
+    f.setAttribute('style', `background:${headerColor} !important; padding:12px 16px !important; display:flex !important; align-items:center !important; border-top:1px solid rgba(0,0,0,0.05) !important;`);
     
     var input = document.createElement('div');
     input.id = 'sn-input';
     input.contentEditable = 'true';
-    input.setAttribute('placeholder', 'Type a note...');
-    input.setAttribute('style', `flex:1;background:${isDark ? '#2a3942' : '#ffffff'};color:${textColor};padding:9px 12px;border-radius:8px;font-size:15px;min-height:20px;max-height:100px;overflow-y:auto;outline:none;`);
+    input.setAttribute('placeholder', 'Type "Post ..." to save or "Return ..." to search');
+    input.setAttribute('style', `flex:1 !important; background:${isDark ? '#2a3942' : '#ffffff'} !important; color:${textColor} !important; padding:10px 14px !important; border-radius:8px !important; font-size:15px !important; min-height:20px !important; max-height:120px !important; overflow-y:auto !important; outline:none !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;`);
     
     input.onkeydown = function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -202,37 +182,24 @@
             var text = this.textContent.trim();
             if (text) {
                 this.textContent = '';
-                if (!handleCommand(text)) { saveNote(text); }
+                handleInput(text);
             }
         }
     };
 
-    footer.appendChild(input);
-
-    panel.appendChild(header);
+    f.appendChild(input);
+    panel.appendChild(h);
     panel.appendChild(list);
-    panel.appendChild(footer);
+    panel.appendChild(f);
 
-    // Append to the main content area (right side)
-    var main = document.getElementById('main') || document.querySelector('[data-testid="conversation-panel-body"]')?.parentElement;
-    if (main) {
-        main.style.position = 'relative';
-        main.appendChild(panel);
-    } else {
-        document.body.appendChild(panel);
-    }
-
+    document.body.appendChild(panel);
     ui.panel = panel;
     ui.messageList = list;
     ui.input = input;
 
-    // Inject CSS for animation
-    var style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes sn-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        #sn-input:empty:before { content: attr(placeholder); color: #667781; }
-    `;
-    document.head.appendChild(style);
+    var s = document.createElement('style');
+    s.innerHTML = '#sn-input:empty:before { content: attr(placeholder); color: #8696a0; }';
+    document.head.appendChild(s);
   }
 
   function togglePanel() {
@@ -241,83 +208,50 @@
     ui.panel.style.display = isPanelOpen ? 'flex' : 'none';
     if (isPanelOpen) {
         ui.input.focus();
-        if (ui.messageList.children.length === 0) {
-            renderHistoricNotes();
-        }
+        if (ui.messageList.children.length === 0) renderWelcome();
     }
   }
 
-  function renderHistoricNotes() {
+  function renderWelcome() {
     ui.messageList.innerHTML = '';
-    // Welcome message
-    appendBotReply(`👋 <strong>Hi! I'm your SaveNote Assistant.</strong><br>I've replaced the old injection method with this clean panel.<br><br>Type anything here to save it as a note!`);
-    
-    // Show last 5 notes
-    notes.slice(0, 5).reverse().forEach(function(n) {
-        appendUserMessage(n.raw_message, true);
-        appendBotReply(`${CATEGORY_EMOJI[n.category]} Saved in <strong>${n.category}</strong>`, true);
-    });
+    appendMessage('bot', `👋 <strong>Hi, I'm ${BOT_NAME}.</strong><br><br>I organize your life using local storage. Just type to save a note, or use commands:<br><br>📝 <strong>Post</strong>: Save a note specifically.<br>🔍 <strong>Return</strong>: Find a saved note.<br><br><i>Ex: "Return where did I park?"</i>`);
   }
 
-  function appendUserMessage(text, isHistoric) {
+  function appendMessage(type, content) {
+    if (!ui.messageList) return;
     var isDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
-    var bubbleBg = isDark ? '#005c4b' : '#d9fdd3';
-    var textColor = isDark ? '#e9edef' : '#111b21';
-
     var row = document.createElement('div');
-    row.style = 'display:flex;justify-content:flex-end;margin-bottom:8px;';
+    row.style = `display:flex; justify-content:${type === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom:12px; width:100%;`;
     
     var bubble = document.createElement('div');
-    bubble.setAttribute('style', `background:${bubbleBg};color:${textColor};padding:6px 10px;border-radius:8px 0 8px 8px;max-width:85%;font-size:14.2px;box-shadow:0 1px 0.5px rgba(0,0,0,0.13);position:relative;`);
-    bubble.textContent = text;
+    var isUser = type === 'user';
+    var bg = isUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#ffffff');
+    var color = isDark ? '#e9edef' : '#111b21';
+    
+    bubble.setAttribute('style', `background:${bg}; color:${color}; padding:8px 14px; border-radius:12px; max-width:85%; font-size:14.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; line-height: 1.5; border-${isUser ? 'top-right' : 'top-left'}-radius: 0;`);
+    bubble.innerHTML = content;
     
     row.appendChild(bubble);
     ui.messageList.appendChild(row);
-    scrollToBottom();
-  }
-
-  function appendBotReply(html, isHistoric) {
-    var isDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
-    var bubbleBg = isDark ? '#202c33' : '#ffffff';
-    var textColor = isDark ? '#e9edef' : '#111b21';
-
-    var row = document.createElement('div');
-    row.style = 'display:flex;justify-content:flex-start;margin-bottom:8px;';
-    
-    var bubble = document.createElement('div');
-    bubble.setAttribute('style', `background:${bubbleBg};color:${textColor};padding:6px 10px;border-radius:0 8px 8px 8px;max-width:85%;font-size:14.2px;box-shadow:0 1px 0.5px rgba(0,0,0,0.13);position:relative;`);
-    bubble.innerHTML = html;
-    
-    row.appendChild(bubble);
-    ui.messageList.appendChild(row);
-    scrollToBottom();
+    ui.messageList.scrollTop = ui.messageList.scrollHeight;
   }
 
   function simulateTyping() {
     var status = document.getElementById('sn-status');
     if (status) {
-        status.textContent = 'typing...';
+        status.textContent = 'thinking...';
         status.style.color = '#00a884';
         setTimeout(function() {
             status.textContent = 'online';
-            status.style.color = '#667781';
-        }, 1200);
+        }, 1000);
     }
   }
 
-  function scrollToBottom() {
-    ui.messageList.scrollTop = ui.messageList.scrollHeight;
-  }
-
-  // ===== Observers =====
-  function startObservers() {
-    setInterval(createSidebarButton, 2000);
-  }
-
+  // ===== Initialize =====
   function init() {
     loadNotes().then(function() {
-        startObservers();
-        console.log('🤖 [SaveNote] UI Initialized.');
+        setInterval(createSidebarButton, 2000);
+        console.log('🤖 [SaveNote] V4 Ready.');
     });
   }
 
