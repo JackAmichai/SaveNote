@@ -1,16 +1,23 @@
 /**
  * SaveNote — WhatsApp Web Native Injector (Bookmarklet Version)
- * V5: Advanced Categorization + File/Image Support
+ * V6: Advanced Features (OCR + Reminders)
  */
 
 (function () {
   'use strict';
 
-  if (window.__savenote_loaded_v5) {
+  if (window.__savenote_loaded_v6) {
     if (window.__sn_toggle) window.__sn_toggle();
     return;
   }
-  window.__savenote_loaded_v5 = true;
+  window.__savenote_loaded_v6 = true;
+
+  // Load Tesseract if not already there
+  if (!window.Tesseract) {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    document.head.appendChild(script);
+  }
 
   // ===== Configuration =====
   var BOT_NAME = 'SaveNote AI';
@@ -122,9 +129,17 @@
   async function handleFileUpload(e) {
     var files = Array.from(e.target.files);
     var atts = [];
+    appendMessage('bot', '⌛ <strong>Processing attachments...</strong> OCR engine starting.');
     for (var f of files) {
       var data = await toBase64(f);
-      atts.push({ name: f.name, type: f.type, data: data });
+      var ocrText = "";
+      if (f.type.startsWith('image/') && window.Tesseract) {
+        const worker = await Tesseract.createWorker('eng');
+        const ret = await worker.recognize(data);
+        await worker.terminate();
+        ocrText = ret.data.text;
+      }
+      atts.push({ name: f.name, type: f.type, data: data, ocr_text: ocrText });
     }
     processNote("", atts);
     e.target.value = '';
@@ -145,7 +160,7 @@
         else html += `<br><div style="padding:8px;background:rgba(0,0,0,0.05);border-radius:4px;margin-top:8px;font-size:12px;">📄 ${a.name}</div>`;
       });
     }
-    appendMessage('user', html);
+    if (html) appendMessage('user', html);
     var status = document.getElementById('sn-status');
     if (status) status.textContent = 'processing...';
     
@@ -171,7 +186,9 @@
             var notes = loadNotes();
             notes.unshift({ category: cat, raw_message: content, atts: atts || [], created_at: new Date().toISOString() });
             saveNotes(notes);
-            appendMessage('bot', `${CATEGORY_EMOJI[cat]} <strong>Saved to ${cat}!</strong><br>Note and attachments stored.`);
+            var botConfirm = `${CATEGORY_EMOJI[cat]} <strong>Saved to ${cat}!</strong>`;
+            if (atts && atts.some(a => a.ocr_text)) botConfirm += "<br>🔍 OCR extracted text from images.";
+            appendMessage('bot', botConfirm);
         }
         if (status) status.textContent = 'online';
     }, 1000);
@@ -181,14 +198,14 @@
     if (!ui.panel) createPanel();
     isPanelOpen = !isPanelOpen;
     ui.panel.style.display = isPanelOpen ? 'flex' : 'none';
-    if (isPanelOpen) { ui.input.focus(); if (ui.messageList.children.length === 0) renderWelcome(); }
+    if (isPanelOpen) { 
+      ui.input.focus(); 
+      if (ui.messageList.children.length === 0) {
+        appendMessage('bot', '👋 <strong>Welcome to SaveNote bot!</strong><br><br>To save notes such as Health, write: <code>Post Health to take pills</code><br><br>To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒');
+      }
+    }
   }
   window.__sn_toggle = togglePanel;
-
-  function renderWelcome() {
-    ui.messageList.innerHTML = '';
-    appendMessage('bot', `👋 <strong>V5 Active!</strong><br><br>I now support files, images, and more categories:<br>🏥 Health, 🍳 Recipes, 💰 Finance, 👤 People, and more.<br><br>Click the 📎 icon to save files!`);
-  }
 
   function appendMessage(type, content) {
     if (!ui.messageList) return;
@@ -207,6 +224,6 @@
   }
 
   setInterval(createSidebarButton, 2000);
-  console.log('🤖 [SaveNote] V5 Bookmarklet Ready.');
+  console.log('🤖 [SaveNote] V6 Bookmarklet Ready.');
   togglePanel();
 })();

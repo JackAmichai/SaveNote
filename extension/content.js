@@ -151,7 +151,12 @@
     if (!ui.panel) createPanel();
     isPanelOpen = !isPanelOpen;
     ui.panel.style.display = isPanelOpen ? 'flex' : 'none';
-    if (isPanelOpen) { ui.input.focus(); if (ui.messageList.children.length === 0) appendMessage('bot', '👋 <strong>V6 Online.</strong> OCR and Reminders active.'); }
+    if (isPanelOpen) { 
+      ui.input.focus(); 
+      if (ui.messageList.children.length === 0) {
+        appendMessage('bot', '👋 <strong>Welcome to SaveNote bot!</strong><br><br>To save notes such as Health, write: <code>Post Health to take pills</code><br><br>To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒');
+      }
+    }
   }
 
   function appendMessage(type, content) {
