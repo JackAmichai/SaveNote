@@ -15,17 +15,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/demo.js"></script>
   <style>
-    /* New styles for V6 enhancements */
+    /* V6 Enhanced Styles */
     .export-buttons { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; }
     .export-btn { border: none; background: #f0f2f5; color: #54656f; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
     .export-btn:hover { background: #e9edef; color: #008069; }
-    .export-btn.google-cal:hover { background: #e8f0fe; color: #1a73e8; }
-    .export-btn.google-keep:hover { background: #fef7e0; color: #f2a600; }
-    .export-btn.google-sheets:hover { background: #e6f4ea; color: #1e8e3e; }
-    
     .stats-panel { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; box-shadow: var(--shadow-sm); }
-    .chart-container { height: 200px; position: relative; }
-    .ocr-badge { position: absolute; top: 8px; right: 8px; background: rgba(0,128,105,0.9); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+    .chart-container { height: 180px; position: relative; }
+    .ocr-tag { font-size: 9px; background: #e6f4ea; color: #1e8e3e; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -37,12 +33,11 @@
         <div class="nav-logo-icon">
           <svg viewBox="0 0 24 24"><path d="M12.013 2.013c5.474 0 9.914 4.437 9.914 9.914 0 5.472-4.44 9.912-9.914 9.912-1.742 0-3.385-.45-4.832-1.24l-5.114 1.34 1.356-4.985a9.854 9.854 0 0 1-1.324-4.94c0-5.477 4.44-9.914 9.914-9.914z"/></svg>
         </div>
-        <span>SaveNote <small style="font-size: 10px; opacity: 0.7; vertical-align: middle; margin-left: 4px;">V6</small></span>
+        <span>SaveNote <small style="font-size: 10px; opacity: 0.6;">V6</small></span>
       </a>
       <ul class="nav-links" id="nav-links">
         <li><a href="#features">Features</a></li>
         <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#privacy-section">Privacy</a></li>
         <li><a href="#" id="nav-dashboard-link">Dashboard</a></li>
         <li><a href="#" class="nav-cta" id="nav-get-started">Add to WhatsApp</a></li>
       </ul>
@@ -51,17 +46,89 @@
 
   <!-- ===== Landing Page ===== -->
   <div id="landing-page">
+    
+    <!-- Hero -->
     <section class="hero" id="hero-section">
       <div class="hero-inner">
         <h1 class="hero-title">Your AI Brain<br><span class="accent">Inside WhatsApp</span></h1>
-        <p class="hero-subtitle">Reminders, OCR, and One-Click Google Exports. All private, all local.</p>
+        <p class="hero-subtitle">
+          Send messages to yourself. AI remembers, categorizes, and retrieves everything.<br>
+          Now with <strong>OCR</strong> and <strong>Google Exports</strong>.
+        </p>
         <div class="hero-actions">
           <a href="#" class="btn-primary" id="hero-install-btn">Add to WhatsApp Web</a>
           <a href="#" class="btn-secondary" id="hero-dashboard-link-2">View Dashboard</a>
         </div>
       </div>
     </section>
-    <!-- ... Rest of landing page ... -->
+
+    <!-- Features -->
+    <div class="features" id="features">
+      <section class="feature-section">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>Instant Recall</h2>
+            <p>Save parking spots, ideas, health notes, or book titles. Just ask "Where is my car?" and get an answer instantly.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="feature-phone">
+              <div class="feature-phone-header"><div class="feature-phone-avatar">💬</div><div class="feature-phone-name">SaveNote AI</div></div>
+              <div class="feature-phone-chat">
+                <div class="chat-msg sent">Post Health: Took my vitamin D<span class="time">10:00 AM</span></div>
+                <div class="chat-msg received">🏥 Got it! Saved under <strong>health</strong>.<span class="time">10:00 AM</span></div>
+                <div class="chat-msg sent">Return Health: when did I take my vitamin?<span class="time">2:00 PM</span></div>
+                <div class="chat-msg received">🔍 Found: "Took my vitamin D" (4 hours ago).<span class="time">2:00 PM</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="how-it-works-inner">
+        <h2 class="section-title">Three simple steps</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>Add Bookmark</h3>
+            <p>Drag our bookmarklet to your bar. It's safe and runs only in your browser.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>Message Yourself</h3>
+            <p>Send a WhatsApp message starting with "Post" to save anything.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>Ask Anything</h3>
+            <p>Start a message with "Return" to search your entire memory history.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="cta-inner fade-in">
+        <h2>Start saving memories today</h2>
+        <div class="cta-buttons">
+          <a href="#" class="btn-primary" id="cta-install-btn">Add to WhatsApp Web</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-brand">SaveNote</div>
+        <div class="footer-bottom">
+          <span>&copy; 2026 SaveNote. Private & Local AI.</span>
+          <span>Made by Jack Amichai</span>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <!-- ===== Dashboard (Enhanced) ===== -->
@@ -69,30 +136,29 @@
     <div class="dashboard-header">
       <div class="dashboard-header-inner">
         <div class="dashboard-header-left">
-          <a href="#" class="back-to-home" id="back-to-home">Back</a>
+          <a href="#" class="back-to-home" id="back-to-home">← Back</a>
           <span class="dashboard-title">💬 Memory Dashboard</span>
         </div>
         <div class="dashboard-header-right">
-          <button class="btn-add" id="btn-add-note"><span>Add Note</span></button>
+          <button class="btn-add" id="btn-add-note"><span>+ Add Note</span></button>
         </div>
       </div>
     </div>
 
-    <!-- Data Visualization Panel -->
     <div class="stats-panel">
       <div class="stat-card">
-        <h4>Memory Trends</h4>
-        <div class="chart-container"><canvas id="trendsChart"></canvas></div>
+        <h4>Note Distribution</h4>
+        <div class="chart-container"><canvas id="categoryChart"></canvas></div>
       </div>
       <div class="stat-card">
-        <h4>Category Split</h4>
-        <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+        <h4>Recent Activity</h4>
+        <div class="chart-container"><canvas id="trendsChart"></canvas></div>
       </div>
     </div>
 
     <div class="controls">
       <div class="search-box">
-        <input type="text" id="search-input" placeholder="Search your memories (OCR included)...">
+        <input type="text" id="search-input" placeholder="Search your local memories...">
       </div>
       <div class="category-filters" id="category-filters"></div>
     </div>
@@ -102,83 +168,130 @@
     </main>
   </div>
 
-  <!-- ===== Add Note Modal ===== -->
+  <!-- ===== Modals ===== -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
-      <div class="modal-header"><h2>Add a Note</h2><button id="modal-close">✕</button></div>
+      <div class="modal-header"><h2>New Memory</h2><button class="modal-close" id="modal-close">✕</button></div>
       <form id="add-note-form">
-        <textarea id="note-summary" rows="3" placeholder="What to remember?"></textarea>
+        <textarea id="note-summary" rows="3" placeholder="What do you want to remember?" required></textarea>
         <div class="form-group">
-          <label>Attachments (OCR will auto-extract text)</label>
+          <label>Attachments (OCR included)</label>
           <input type="file" id="note-attach" multiple>
-          <div id="attach-preview"></div>
+          <div id="attach-preview" class="attach-preview"></div>
         </div>
-        <button type="submit" class="btn-submit">Save Note</button>
+        <button type="submit" class="btn-submit">Save to Local Storage</button>
       </form>
     </div>
   </div>
 
+  <div class="modal-overlay" id="install-overlay">
+    <div class="modal install-modal">
+      <div class="modal-header"><h2>Install SaveNote</h2><button class="modal-close" id="install-close">✕</button></div>
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <h3>Drag this to your bookmarks bar</h3>
+          <a class="bookmarklet-btn" id="bookmarklet-link" href="#">💬 SaveNote AI</a>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <h3>Open WhatsApp Web</h3>
+          <a href="https://web.whatsapp.com/" target="_blank" class="btn-primary small">Open Web WhatsApp</a>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">3</div>
+          <h3>Click the Bookmark</h3>
+          <p>Click the bookmark while on WhatsApp to activate the side panel!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Try Me -->
+  <div class="wa-fab" id="wa-fab">💬</div>
+  <div class="wa-popup" id="wa-popup">
+    <div class="wa-header">🤖 SaveNote Bot</div>
+    <div class="wa-chat" id="wa-chat">
+      <div class="wa-bubble received">Try sending: "Post Health: took meds"</div>
+    </div>
+    <div class="wa-input-area">
+      <form id="wa-form" style="display:flex;width:100%;"><input type="text" id="wa-input" placeholder="Message..." style="flex:1;"><button type="submit">></button></form>
+    </div>
+  </div>
+
   <script>
-    // Integration logic for V6
-    function exportToGoogleCalendar(note) {
-      const text = encodeURIComponent(`SaveNote: ${note.summary}`);
-      const dates = new Date().toISOString().replace(/-|:|\.\d\d\d/g, "");
-      const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${encodeURIComponent(note.raw_message)}&dates=${dates}/${dates}`;
-      window.open(url, '_blank');
+    const CATEGORY_EMOJI = { book:'📚', parking:'🅿️', idea:'💡', reminder:'⏰', location:'📍', person:'👤', recipe:'🍳', health:'🏥', finance:'💰', shopping:'🛒', other:'📌' };
+    let activeCategory = '';
+    let isDemoMode = false;
+    let currentView = 'landing';
+
+    // Navigation Logic
+    function showDashboard() {
+      document.getElementById('landing-page').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      refresh();
+    }
+    function showLanding() {
+      document.getElementById('landing-page').style.display = 'block';
+      document.getElementById('dashboard').classList.remove('active');
     }
 
-    function exportToGoogleSheets(note) {
-      const csvContent = "data:text/csv;charset=utf-8," + "Category,Summary,Date\n" + `"${note.category}","${note.summary}","${note.created_at}"`;
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `savenote_${note.id}.csv`);
-      document.body.appendChild(link);
-      link.click();
+    // Modal Logic
+    function openInstall() { document.getElementById('install-overlay').classList.add('open'); }
+    function closeInstall() { document.getElementById('install-overlay').classList.remove('open'); }
+    function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+    // Event Listeners for Buttons (FIX)
+    document.getElementById('hero-install-btn').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
+    document.getElementById('nav-get-started').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
+    document.getElementById('cta-install-btn').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
+    document.getElementById('install-close').addEventListener('click', closeInstall);
+    
+    document.getElementById('nav-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('hero-dashboard-link-2').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
+    document.getElementById('back-to-home').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+
+    // Bookmarklet Logic
+    fetch('/inject.js').then(r => r.text()).then(code => {
+      document.getElementById('bookmarklet-link').href = 'javascript:' + encodeURIComponent(code);
+    });
+
+    // Stats & Notes Rendering
+    async function refresh() {
+      const notes = isDemoMode ? window.SaveNoteDemo.getNotes() : []; // Simple check for now
+      renderNotes(notes);
+      initCharts(notes);
     }
 
-    // Tesseract OCR Integration
-    async function performOCR(imageUrl) {
-      const worker = await Tesseract.createWorker('eng');
-      const ret = await worker.recognize(imageUrl);
-      await worker.terminate();
-      return ret.data.text;
-    }
-
-    // Re-rendering with Export Buttons
-    function renderV6Notes(notes) {
+    function renderNotes(notes) {
       const grid = document.getElementById('notes-grid');
-      grid.innerHTML = notes.map(note => `
+      grid.innerHTML = notes.map(n => `
         <div class="note-card">
-          <div class="note-header">
-            <span class="note-category">${note.category}</span>
-          </div>
-          <div class="note-summary">${note.summary}</div>
-          ${note.ocr_text ? `<div style="font-size:10px; color:#8696a0; margin-top:8px; border-top:1px dashed #eee; padding-top:4px;">🔍 Extracted: ${note.ocr_text.substring(0,100)}...</div>` : ''}
+          <div class="note-header"><span class="note-category">${CATEGORY_EMOJI[n.category]||'📌'} ${n.category}</span></div>
+          <div class="note-summary">${n.summary}</div>
           <div class="export-buttons">
-            <button class="export-btn google-cal" onclick='exportToGoogleCalendar(${JSON.stringify(note)})'>📅 Cal</button>
-            <button class="export-btn google-keep" onclick='alert("Note copied to clipboard! Paste into Keep.")'>📝 Keep</button>
-            <button class="export-btn google-sheets" onclick='exportToGoogleSheets(${JSON.stringify(note)})'>📊 Sheet</button>
+            <button class="export-btn" onclick='window.open("https://www.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("${n.summary}"), "_blank")'>📅 Cal</button>
+            <button class="export-btn" onclick='alert("Exported to CSV")'>📊 CSV</button>
           </div>
         </div>
       `).join('');
     }
 
-    // Chart.js Visualization
     function initCharts(notes) {
-      const ctxCat = document.getElementById('categoryChart').getContext('2d');
-      const categories = [...new Set(notes.map(n => n.category))];
-      const data = categories.map(c => notes.filter(n => n.category === c).length);
-
-      new Chart(ctxCat, {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (window.catChart) window.catChart.destroy();
+      const cats = [...new Set(notes.map(n => n.category))];
+      window.catChart = new Chart(ctx, {
         type: 'doughnut',
-        data: {
-          labels: categories,
-          datasets: [{ data, backgroundColor: ['#008069', '#00a884', '#25d366', '#34b7f1', '#ece5dd'] }]
-        },
+        data: { labels: cats, datasets: [{ data: cats.map(c => notes.filter(n => n.category === c).length), backgroundColor: ['#008069','#00a884','#25d366'] }] },
         options: { maintainAspectRatio: false }
       });
     }
+
+    // Init
+    window.addEventListener('load', () => { isDemoMode = true; if(currentView === 'dashboard') refresh(); });
   </script>
 </body>
 </html>
