@@ -221,6 +221,7 @@ This product is <strong>completely free</strong> and I intend to keep it that wa
 <strong>How to use:</strong><br>
 📝 Save Health: <code>Post Health to take pills</code><br>
 🔍 Query Finance: <code>Return Finance my last note about savings</code><br><br>
+<strong>Send help for more info and categories!</strong><br>
 I run hard-coded and simple only on your browser to keep your data safe! 🔒<br><br>
 Support maintenance: <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: #008069; font-weight: bold;">buymeacoffee.com/JackAmi ☕</a>`);
       }
