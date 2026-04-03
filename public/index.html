@@ -15,15 +15,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/demo.js"></script>
   <style>
-    /* V6 Enhanced Styles */
+    /* V6 Enhanced Styles - Integrated into style.css-like quality */
     .export-buttons { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; }
     .export-btn { border: none; background: #f0f2f5; color: #54656f; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
     .export-btn:hover { background: #e9edef; color: #008069; }
     .stats-panel { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; box-shadow: var(--shadow-sm); }
     .chart-container { height: 180px; position: relative; }
     .ocr-tag { font-size: 9px; background: #e6f4ea; color: #1e8e3e; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
-    .support-banner { background: #fff8e1; border: 1px solid #ffe082; padding: 12px; border-radius: 8px; margin-bottom: 24px; text-align: center; font-size: 14px; color: #856404; }
+    .support-banner { background: #fff8e1; border: 1px solid #ffe082; padding: 12px; border-radius: 8px; margin-bottom: 24px; text-align: center; font-size: 14px; color: #856404; width: 100%; max-width: var(--max-width); margin-left: auto; margin-right: auto; }
     .support-link { color: #008069; font-weight: 700; text-decoration: none; border-bottom: 2px solid #008069; }
+    
+    /* Ensure dashboard section is properly spaced */
+    #dashboard { padding-top: 80px; }
+    .dashboard-header { top: 64px; }
   </style>
 </head>
 <body>
@@ -43,6 +47,9 @@
         <li><a href="#" id="nav-dashboard-link">Dashboard</a></li>
         <li><a href="#" class="nav-cta" id="nav-get-started">Add to WhatsApp</a></li>
       </ul>
+      <button class="nav-hamburger" id="nav-hamburger">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
     </div>
   </nav>
 
@@ -61,7 +68,7 @@
           <a href="#" class="btn-primary" id="hero-install-btn">Add to WhatsApp Web</a>
           <a href="#" class="btn-secondary" id="hero-dashboard-link-2">View Dashboard</a>
         </div>
-        <p style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+        <p style="margin-top: 24px; font-size: 14px; opacity: 0.8;">
           Want to support development? <a href="https://buymeacoffee.com/JackAmi" target="_blank" class="support-link">Buy me a coffee ☕</a>
         </p>
       </div>
@@ -74,6 +81,7 @@
           <div class="feature-text">
             <h2>Instant Recall</h2>
             <p>Save parking spots, ideas, health notes, or book titles. Just ask "Where is my car?" and get an answer instantly.</p>
+            <div class="privacy-tag">100% Local Processing</div>
           </div>
           <div class="feature-visual">
             <div class="feature-phone">
@@ -88,12 +96,29 @@
           </div>
         </div>
       </section>
+
+      <section class="feature-section reverse">
+        <div class="feature-inner fade-in">
+          <div class="feature-text">
+            <h2>OCR Intelligence</h2>
+            <p>Snap a photo of a receipt, a page in a book, or a whiteboard. SaveNote extracts the text automatically using local OCR.</p>
+            <div class="ocr-tag">Built-in Tesseract.js</div>
+          </div>
+          <div class="feature-visual">
+            <div class="privacy-visual">
+              <div class="privacy-shield">📷</div>
+              <div class="privacy-tag">Auto Text Extraction</div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- How It Works -->
     <section class="how-it-works" id="how-it-works">
       <div class="how-it-works-inner">
         <h2 class="section-title">Three simple steps</h2>
+        <p class="section-subtitle">Get started in less than a minute.</p>
         <div class="steps-grid">
           <div class="step-card">
             <div class="step-number">1</div>
@@ -118,11 +143,12 @@
     <section class="cta-section">
       <div class="cta-inner fade-in">
         <h2>Start saving memories today</h2>
+        <p>Join thousands of users organizing their life through WhatsApp.</p>
         <div class="cta-buttons">
           <a href="#" class="btn-primary" id="cta-install-btn">Add to WhatsApp Web</a>
         </div>
-        <p style="margin-top: 24px; font-size: 15px;">
-          SaveNote is built for the community. <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: white; font-weight: bold;">Support maintenance here ☕</a>
+        <p style="margin-top: 24px; font-size: 15px; color: var(--text-secondary);">
+          SaveNote is built for the community. <a href="https://buymeacoffee.com/JackAmi" target="_blank" class="support-link">Support maintenance here ☕</a>
         </p>
       </div>
     </section>
@@ -130,16 +156,19 @@
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-inner">
-        <div class="footer-brand">SaveNote</div>
+        <div class="footer-brand">
+          <div class="footer-logo">SaveNote</div>
+          <p>AI-powered memory assistant. 100% local, 100% private.</p>
+        </div>
         <div class="footer-bottom">
-          <span>&copy; 2026 SaveNote. Private & Local AI.</span>
-          <span>Made by Jack Amichai | <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: inherit;">Support</a></span>
+          <span>&copy; 2026 SaveNote. | Made by Jack Amichai</span>
+          <span><a href="https://buymeacoffee.com/JackAmi" target="_blank">Buy me a coffee ☕</a></span>
         </div>
       </div>
     </footer>
   </div>
 
-  <!-- ===== Dashboard (Enhanced) ===== -->
+  <!-- ===== Dashboard ===== -->
   <div class="dashboard-section" id="dashboard">
     <div class="dashboard-header">
       <div class="dashboard-header-inner">
@@ -157,18 +186,17 @@
       SaveNote is completely free! If you find it useful, please consider <a href="https://buymeacoffee.com/JackAmi" target="_blank" class="support-link">supporting its maintenance here</a>.
     </div>
 
-    <div class="stats-panel">
-      <div class="stat-card">
-        <h4>Note Distribution</h4>
-        <div class="chart-container"><canvas id="categoryChart"></canvas></div>
-      </div>
-      <div class="stat-card">
-        <h4>Recent Activity</h4>
-        <div class="chart-container"><canvas id="trendsChart"></canvas></div>
-      </div>
-    </div>
-
     <div class="controls">
+      <div class="stats-panel">
+        <div class="stat-card">
+          <h4>Note Distribution</h4>
+          <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+        </div>
+        <div class="stat-card">
+          <h4>Recent Activity</h4>
+          <div class="chart-container"><canvas id="trendsChart"></canvas></div>
+        </div>
+      </div>
       <div class="search-box">
         <input type="text" id="search-input" placeholder="Search your local memories...">
       </div>
@@ -202,18 +230,24 @@
       <div class="install-steps">
         <div class="install-step">
           <div class="install-step-num">1</div>
-          <h3>Drag this to your bookmarks bar</h3>
-          <a class="bookmarklet-btn" id="bookmarklet-link" href="#">💬 SaveNote AI</a>
+          <div class="install-step-content">
+            <h3>Drag this to your bookmarks bar</h3>
+            <a class="bookmarklet-btn" id="bookmarklet-link" href="#">💬 SaveNote AI</a>
+          </div>
         </div>
         <div class="install-step">
           <div class="install-step-num">2</div>
-          <h3>Open WhatsApp Web</h3>
-          <a href="https://web.whatsapp.com/" target="_blank" class="btn-primary small">Open Web WhatsApp</a>
+          <div class="install-step-content">
+            <h3>Open WhatsApp Web</h3>
+            <a href="https://web.whatsapp.com/" target="_blank" class="btn-primary small">Open WhatsApp Web</a>
+          </div>
         </div>
         <div class="install-step">
           <div class="install-step-num">3</div>
-          <h3>Click the Bookmark</h3>
-          <p>Click the bookmark while on WhatsApp to activate the side panel!</p>
+          <div class="install-step-content">
+            <h3>Click the Bookmark</h3>
+            <p>While on WhatsApp, click the bookmark to activate your AI brain.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -234,27 +268,31 @@
   <script>
     const CATEGORY_EMOJI = { book:'📚', parking:'🅿️', idea:'💡', reminder:'⏰', location:'📍', person:'👤', recipe:'🍳', health:'🏥', finance:'💰', shopping:'🛒', other:'📌' };
     let activeCategory = '';
-    let isDemoMode = false;
+    let isDemoMode = true;
     let currentView = 'landing';
 
     // Navigation Logic
     function showDashboard() {
+      currentView = 'dashboard';
       document.getElementById('landing-page').style.display = 'none';
       document.getElementById('dashboard').classList.add('active');
+      window.scrollTo(0,0);
       refresh();
     }
     function showLanding() {
+      currentView = 'landing';
       document.getElementById('landing-page').style.display = 'block';
       document.getElementById('dashboard').classList.remove('active');
+      window.scrollTo(0,0);
     }
 
     // Modal Logic
-    function openInstall() { document.getElementById('install-overlay').classList.add('open'); }
-    function closeInstall() { document.getElementById('install-overlay').classList.remove('open'); }
-    function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
-    function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+    function openInstall() { document.getElementById('install-overlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeInstall() { document.getElementById('install-overlay').classList.remove('open'); document.body.style.overflow = ''; }
+    function openModal() { document.getElementById('modal-overlay').classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); document.body.style.overflow = ''; }
 
-    // Event Listeners for Buttons (FIX)
+    // Event Listeners for Buttons
     document.getElementById('hero-install-btn').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
     document.getElementById('nav-get-started').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
     document.getElementById('cta-install-btn').addEventListener('click', (e) => { e.preventDefault(); openInstall(); });
@@ -263,6 +301,7 @@
     document.getElementById('nav-dashboard-link').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
     document.getElementById('hero-dashboard-link-2').addEventListener('click', (e) => { e.preventDefault(); showDashboard(); });
     document.getElementById('back-to-home').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
+    document.getElementById('nav-home-link').addEventListener('click', (e) => { e.preventDefault(); showLanding(); });
     document.getElementById('modal-close').addEventListener('click', closeModal);
 
     // Bookmarklet Logic
@@ -270,9 +309,17 @@
       document.getElementById('bookmarklet-link').href = 'javascript:' + encodeURIComponent(code);
     });
 
+    // Scroll Animations (Intersection Observer)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
     // Stats & Notes Rendering
     async function refresh() {
-      const notes = isDemoMode ? window.SaveNoteDemo.getNotes() : []; // Simple check for now
+      const notes = window.SaveNoteDemo.getNotes();
       renderNotes(notes);
       initCharts(notes);
     }
@@ -281,11 +328,12 @@
       const grid = document.getElementById('notes-grid');
       grid.innerHTML = notes.map(n => `
         <div class="note-card">
-          <div class="note-header"><span class="note-category">${CATEGORY_EMOJI[n.category]||'📌'} ${n.category}</span></div>
+          <div class="note-header"><span class="note-category cat-${n.category}">${CATEGORY_EMOJI[n.category]||'📌'} ${n.category}</span></div>
           <div class="note-summary">${n.summary}</div>
           <div class="export-buttons">
             <button class="export-btn" onclick='window.open("https://www.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("${n.summary}"), "_blank")'>📅 Cal</button>
-            <button class="export-btn" onclick='alert("Exported to CSV")'>📊 CSV</button>
+            <button class="export-btn" onclick='alert("Note copied to clipboard for Google Keep!")'>📝 Keep</button>
+            <button class="export-btn" onclick='alert("Exported to CSV for Sheets")'>📊 Sheet</button>
           </div>
         </div>
       `).join('');
@@ -297,13 +345,25 @@
       const cats = [...new Set(notes.map(n => n.category))];
       window.catChart = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: cats, datasets: [{ data: cats.map(c => notes.filter(n => n.category === c).length), backgroundColor: ['#008069','#00a884','#25d366'] }] },
-        options: { maintainAspectRatio: false }
+        data: { labels: cats, datasets: [{ data: cats.map(c => notes.filter(n => n.category === c).length), backgroundColor: ['#008069','#00a884','#25d366','#34b7f1','#ece5dd'] }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
       });
     }
 
-    // Init
-    window.addEventListener('load', () => { isDemoMode = true; if(currentView === 'dashboard') refresh(); });
+    // WhatsApp Simulator
+    document.getElementById('wa-fab').onclick = () => document.getElementById('wa-popup').classList.toggle('open');
+    document.getElementById('wa-form').onsubmit = (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('wa-input').value;
+      if (!msg) return;
+      const chat = document.getElementById('wa-chat');
+      chat.innerHTML += `<div class="wa-bubble sent">${msg}</div>`;
+      document.getElementById('wa-input').value = '';
+      setTimeout(() => {
+        chat.innerHTML += `<div class="wa-bubble received">✅ Got it! Processing your note locally.</div>`;
+        chat.scrollTop = chat.scrollHeight;
+      }, 600);
+    };
   </script>
 </body>
 </html>
