@@ -326,17 +326,41 @@
 
     function renderNotes(notes) {
       const grid = document.getElementById('notes-grid');
-      grid.innerHTML = notes.map(n => `
+      grid.innerHTML = notes.map(n => {
+        let attsHtml = '';
+        if (n.attachments && n.attachments.length > 0) {
+          attsHtml = '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">';
+          n.attachments.forEach(a => {
+            if (a.type.startsWith('image/')) attsHtml += `<img src="${a.data}" style="max-height:80px;border-radius:6px;border:1px solid #eee;box-shadow:var(--shadow-sm);">`;
+            else attsHtml += `<div style="font-size:11px;background:#f0f2f5;padding:6px 10px;border-radius:6px;color:#54656f;">📄 ${a.name.substring(0, 15)}...</div>`;
+          });
+          attsHtml += '</div>';
+        }
+        return `
         <div class="note-card">
           <div class="note-header"><span class="note-category cat-${n.category}">${CATEGORY_EMOJI[n.category]||'📌'} ${n.category}</span></div>
-          <div class="note-summary">${n.summary}</div>
+          <div class="note-summary" style="white-space: pre-wrap; word-break: break-word;">${n.summary || n.raw_message}</div>
+          ${n.attachments && n.attachments.some(a => a.ocr_text) ? `<div class="ocr-tag">🔍 OCR Extracted</div>` : ''}
+          ${attsHtml}
           <div class="export-buttons">
-            <button class="export-btn" onclick='window.open("https://www.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("${n.summary}"), "_blank")'>📅 Cal</button>
-            <button class="export-btn" onclick='alert("Note copied to clipboard for Google Keep!")'>📝 Keep</button>
-            <button class="export-btn" onclick='alert("Exported to CSV for Sheets")'>📊 Sheet</button>
+            <button class="export-btn" onclick='window.open("https://www.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("${n.summary || n.raw_message}"), "_blank")'>📅 Cal</button>
+            <button class="export-btn" onclick='navigator.clipboard.writeText("${n.summary || n.raw_message}"); alert("Copied to clipboard for Google Keep!");'>📝 Keep</button>
+            <button class="export-btn" onclick='exportToCSV("${n.category}", "${(n.summary || n.raw_message).replace(/"/g, '""')}", "${n.created_at}")'>📊 Sheet</button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
+    }
+
+    function exportToCSV(category, text, date) {
+      const csvContent = "data:text/csv;charset=utf-8," + "Category,Summary,Date\\n" + `"${category}","${text}","${date}"`;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `savenote_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function initCharts(notes) {
