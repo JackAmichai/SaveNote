@@ -1,6 +1,6 @@
 /**
  * SaveNote — WhatsApp Web Native Injector (Bookmarklet Version)
- * V6: Advanced Features (OCR + Reminders)
+ * V6: Advanced Features (OCR + Search + Help + Timestamps)
  */
 
 (function () {
@@ -12,7 +12,7 @@
   }
   window.__savenote_loaded_v6 = true;
 
-  // Load Tesseract if not already there
+  // Load Tesseract
   if (!window.Tesseract) {
     var script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
@@ -37,7 +37,7 @@
     idea: /\b(idea|thought|maybe|what if|concept|brainstorm|should try|רעיון|אולי|מה אם)\b/i,
     reminder: /\b(remind|remember|don't forget|todo|task|call|schedule|פגישה|תזכורת|לזכור)\b/i,
     shopping: /\b(shop|shopping|buy|groceries|supermarket|market|shoes|clothes|list|קניות|סופר|לקנות)\b/i,
-    location: /\b(location|place|address|street|restaurant|cafe|bar|store|found a|מקום|כתובת|מסעדה|רחוב)\b/i,
+    location: /\b(location|place|address|street|restaurant|cafe|bar|store|מקום|כתובת|מסעדה|רחוב)\b/i,
     person: /\b(met |person|name is|works at|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
     recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|fry|מתכון|בישול|אוכל)\b/i,
     health: /\b(health|doctor|medicine|medication|symptom|diagnosis|hospital|רופא|בריאות|תרופה)\b/i,
@@ -153,7 +153,8 @@
   }
 
   function processNote(text, atts) {
-    var html = text;
+    var rawText = text.trim();
+    var html = rawText;
     if (atts && atts.length > 0) {
       atts.forEach(a => {
         if (a.type.startsWith('image/')) html += `<br><img src="${a.data}" style="max-width:200px;border-radius:8px;margin-top:8px;">`;
@@ -164,9 +165,21 @@
     var status = document.getElementById('sn-status');
     if (status) status.textContent = 'processing...';
     
-    var lower = text.toLowerCase();
+    var lower = rawText.toLowerCase();
     setTimeout(function() {
-        if (lower.startsWith('return ') || lower.startsWith('query ') || lower.includes('where') || lower.includes('what') || lower.includes('show')) {
+        if (lower === 'help') {
+            appendMessage('bot', `🚀 **SaveNote V6 Full Guide**<br><br>
+**Commands:**<br>
+📝 <code>Post [Category] [Message]</code> - Save a note.<br>
+🔍 <code>Return [Query]</code> - Search your memories.<br><br>
+**Categories:**<br>
+📚 Book, 🅿️ Parking, 💡 Idea, ⏰ Reminder, 📍 Location, 👤 Person, 🍳 Recipe, 🏥 Health, 💰 Finance, 🛒 Shopping.<br><br>
+**Premium Features:**<br>
+📊 **Dashboard:** View memory charts & trends on our site.<br>
+📅 **Google Exports:** One-click save to Calendar/Sheets in dashboard.<br>
+📷 **OCR:** Upload images to extract & save text!<br><br>
+**Privacy:** 100% Local. Your data never leaves your browser. 🔒`);
+        } else if (lower.startsWith('return ') || lower.startsWith('query ') || lower.includes('where') || lower.includes('what') || lower.includes('show')) {
             var results = searchNotes(lower.replace(/^(return|query)\s+/i, ''));
             if (results.length > 0) {
                 var res = `🔍 <strong>Found ${results.length} notes:</strong><br><br>` + 
@@ -181,13 +194,23 @@
                 appendMessage('bot', res);
             } else { appendMessage('bot', `❌ Sorry, I couldn't find anything matching that.`); }
         } else {
-            var content = lower.startsWith('post ') ? text.substring(5) : text;
-            var cat = categorize(content);
+            var contentToSave = rawText;
+            var forcedCat = null;
+            var postMatch = lower.match(/^post\s+(\w+)\s+(.*)/i);
+            if (postMatch) {
+                var potentialCat = postMatch[1].toLowerCase();
+                if (CATEGORY_EMOJI[potentialCat]) {
+                    forcedCat = potentialCat;
+                    contentToSave = postMatch[2];
+                }
+            }
+            var cat = forcedCat || categorize(contentToSave);
             var notes = loadNotes();
-            notes.unshift({ category: cat, raw_message: content, atts: atts || [], created_at: new Date().toISOString() });
+            notes.unshift({ category: cat, raw_message: contentToSave, atts: atts || [], created_at: new Date().toISOString() });
             saveNotes(notes);
             var botConfirm = `${CATEGORY_EMOJI[cat]} <strong>Saved to ${cat}!</strong>`;
             if (atts && atts.some(a => a.ocr_text)) botConfirm += "<br>🔍 OCR extracted text from images.";
+            botConfirm += "<br><br><i>Type 'help' to see what else I can do.</i>";
             appendMessage('bot', botConfirm);
         }
         if (status) status.textContent = 'online';
@@ -201,7 +224,11 @@
     if (isPanelOpen) { 
       ui.input.focus(); 
       if (ui.messageList.children.length === 0) {
-        appendMessage('bot', '👋 <strong>Welcome to SaveNote bot!</strong><br><br>To save notes such as Health, write: <code>Post Health to take pills</code><br><br>To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒');
+        appendMessage('bot', `👋 <strong>Welcome to SaveNote bot!</strong><br><br>
+To save notes such as Health, write: <code>Post Health to take pills</code><br>
+To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>
+Type <strong>'help'</strong> to see all categories and premium features (Charts, Exports, OCR)! 🚀<br><br>
+Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒`);
       }
     }
   }
@@ -212,12 +239,15 @@
     var isDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
     var row = document.createElement('div');
     row.style = `display:flex; justify-content:${type === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom:12px; width:100%;`;
+    
+    var timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
     var bubble = document.createElement('div');
     var isUser = type === 'user';
     var bg = isUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#ffffff');
     var color = isDark ? '#e9edef' : '#111b21';
-    bubble.setAttribute('style', `background:${bg}; color:${color}; padding:10px 14px; border-radius:12px; max-width:85%; font-size:14.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; line-height: 1.5; border-${isUser ? 'top-right' : 'top-left'}-radius: 0;`);
-    bubble.innerHTML = content;
+    bubble.setAttribute('style', `background:${bg}; color:${color}; padding:10px 12px 14px 12px; border-radius:12px; max-width:85%; font-size:14.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; line-height: 1.5; border-${isUser ? 'top-right' : 'top-left'}-radius: 0; position:relative; min-width:80px;`);
+    bubble.innerHTML = content + `<div style="position:absolute; bottom:4px; right:8px; font-size:10px; color:${isDark ? '#8696a0' : '#667781'}; opacity:0.8;">${timeStr}</div>`;
     row.appendChild(bubble);
     ui.messageList.appendChild(row);
     ui.messageList.scrollTop = ui.messageList.scrollHeight;

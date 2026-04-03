@@ -1,6 +1,6 @@
 /**
  * SaveNote — WhatsApp Web Content Script
- * V6: Advanced Features (OCR + Reminders)
+ * V6: Advanced Features (OCR + Search + Help + Timestamps)
  */
 
 (function () {
@@ -9,7 +9,7 @@
   if (window.__savenote_loaded_v6) return;
   window.__savenote_loaded_v6 = true;
 
-  // Load Tesseract if not already there
+  // Load Tesseract
   if (!window.Tesseract) {
     var script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
@@ -28,6 +28,19 @@
     finance: '💰', shopping: '🛒', other: '📌',
   };
 
+  var CATEGORY_KEYWORDS = {
+    parking: /\b(park|parked|parking|car|garage|level|floor|section|lot|spot|חנית|חניתי|חניה|רכב|קומה)\b/i,
+    book: /\b(book|read|reading|author|novel|chapter|finished|started|ספר|קראתי|קריאה|לקריאה|סופר)\b/i,
+    idea: /\b(idea|thought|maybe|what if|concept|brainstorm|should try|רעיון|אולי|מה אם)\b/i,
+    reminder: /\b(remind|remember|don't forget|todo|task|call|schedule|פגישה|תזכורת|לזכור)\b/i,
+    shopping: /\b(shop|shopping|buy|groceries|supermarket|market|shoes|clothes|list|קניות|סופר|לקנות)\b/i,
+    location: /\b(location|place|address|street|restaurant|cafe|bar|store|מקום|כתובת|מסעדה|רחוב)\b/i,
+    person: /\b(met |person|name is|works at|contact|friend|colleague|פגשתי|חבר|עובד ב)\b/i,
+    recipe: /\b(recipe|cook|ingredient|food|dish|meal|bake|fry|מתכון|בישול|אוכל)\b/i,
+    health: /\b(health|doctor|medicine|medication|symptom|diagnosis|hospital|רופא|בריאות|תרופה)\b/i,
+    finance: /\b(money|pay|paid|cost|price|expense|salary|bank|finance|budget|\$|₪|כסף|שילמתי|עלות|הוצאה)\b/i,
+  };
+
   var notes = [];
   var isPanelOpen = false;
   var ui = { sidebarButton: null, panel: null, messageList: null, input: null, fileInput: null };
@@ -42,11 +55,24 @@
     });
   }
 
+  function categorize(text) {
+    for (var k in CATEGORY_KEYWORDS) if (CATEGORY_KEYWORDS[k].test(text)) return k;
+    return 'other';
+  }
+
+  function searchNotes(query) {
+    var lower = query.toLowerCase();
+    var catMatch = categorize(lower);
+    return notes.filter(function(n) {
+      return (n.category === catMatch && catMatch !== 'other') || 
+             n.raw_message.toLowerCase().includes(lower.replace(/\b(where|what|is|my|show|me|did|i)\b/gi, '').trim());
+    });
+  }
+
   async function handleFileUpload(e) {
     var files = Array.from(e.target.files);
     var attachments = [];
     appendMessage('bot', '⌛ <strong>Processing attachments...</strong> OCR engine starting.');
-    
     for (var f of files) {
       var b64 = await toBase64(f);
       var ocrText = "";
@@ -58,8 +84,7 @@
       }
       attachments.push({ name: f.name, type: f.type, data: b64, ocr_text: ocrText });
     }
-    
-    handleInput("Uploaded " + attachments.length + " files", attachments);
+    handleInput("", attachments);
     e.target.value = '';
   }
 
@@ -71,25 +96,93 @@
   }
 
   async function handleInput(text, atts = []) {
-    if (!text.trim() && atts.length === 0) return;
+    var rawText = text.trim();
+    if (!rawText && atts.length === 0) return;
     
-    var userHtml = text;
+    var userHtml = rawText;
     if (atts.length > 0) {
       atts.forEach(a => {
         if (a.type.startsWith('image/')) userHtml += `<br><img src="${a.data}" style="max-width:200px;border-radius:8px;margin-top:8px;">`;
         else userHtml += `<br>📄 ${a.name}`;
       });
     }
-    appendMessage('user', userHtml);
+    if (userHtml) appendMessage('user', userHtml);
     simulateTyping();
 
+    var lower = rawText.toLowerCase();
+
+    // 1. HELP COMMAND
+    if (lower === 'help') {
+      setTimeout(function() {
+        appendMessage('bot', `🚀 **SaveNote V6 Full Guide**<br><br>
+**Commands:**<br>
+📝 <code>Post [Category] [Message]</code> - Save a note.<br>
+🔍 <code>Return [Query]</code> - Search your memories.<br><br>
+**Categories:**<br>
+📚 Book, 🅿️ Parking, 💡 Idea, ⏰ Reminder, 📍 Location, 👤 Person, 🍳 Recipe, 🏥 Health, 💰 Finance, 🛒 Shopping.<br><br>
+**Premium Features:**<br>
+📊 **Dashboard:** View memory charts & trends on our site.<br>
+📅 **Google Exports:** One-click save to Calendar/Sheets in dashboard.<br>
+📷 **OCR:** Upload images to extract & save text!<br><br>
+**Privacy:** 100% Local. Your data never leaves your browser. 🔒`);
+      }, 800);
+      return;
+    }
+
+    // 2. RETRIEVAL COMMAND
+    if (lower.startsWith('return ') || lower.startsWith('query ') || lower.includes('where') || lower.includes('what') || lower.includes('show')) {
+      var query = lower.replace(/^(return|query)\s+/i, '');
+      setTimeout(function() {
+        var results = searchNotes(query);
+        if (results.length > 0) {
+          var resMsg = `🔍 <strong>Found ${results.length} results:</strong><br><br>` + 
+                       results.slice(0, 3).map(function(r) { 
+                         var msg = `${CATEGORY_EMOJI[r.category]} "${r.raw_message}"`;
+                         if (r.attachments && r.attachments.length > 0) {
+                           r.attachments.forEach(function(att) {
+                             if (att.type.startsWith('image/')) msg += `<br><img src="${att.data}" style="max-width:180px;border-radius:4px;margin-top:4px;">`;
+                             else msg += `<br>📄 ${att.name}`;
+                           });
+                         }
+                         return msg;
+                       }).join('<br><hr style="border:0;border-top:1px solid rgba(0,0,0,0.05);margin:10px 0;"><br>');
+          appendMessage('bot', resMsg);
+        } else {
+          appendMessage('bot', `❌ I couldn't find anything matching that. Try different keywords!`);
+        }
+      }, 800);
+      return;
+    }
+
+    // 3. SAVE LOGIC (Post or Auto)
+    var contentToSave = rawText;
+    var forcedCat = null;
+    
+    // Check for "Post [Category] ..."
+    var postMatch = lower.match(/^post\s+(\w+)\s+(.*)/i);
+    if (postMatch) {
+        var potentialCat = postMatch[1].toLowerCase();
+        if (CATEGORY_EMOJI[potentialCat]) {
+            forcedCat = potentialCat;
+            contentToSave = postMatch[2];
+        }
+    }
+
     setTimeout(() => {
-      var note = { id: Date.now(), category: 'other', raw_message: text, attachments: atts, created_at: new Date().toISOString() };
+      var cat = forcedCat || categorize(contentToSave);
+      var note = { 
+        id: Date.now(), 
+        category: cat, 
+        raw_message: contentToSave, 
+        attachments: atts, 
+        created_at: new Date().toISOString() 
+      };
       notes.unshift(note);
       chrome.storage.local.set({ notes: notes });
       
-      var confirm = "✅ <strong>Saved!</strong>";
+      var confirm = `${CATEGORY_EMOJI[cat]} <strong>Saved to ${cat}!</strong>`;
       if (atts.some(a => a.ocr_text)) confirm += "<br>🔍 OCR extracted text from images.";
+      confirm += "<br><br><i>Type 'help' to see what else I can do.</i>";
       appendMessage('bot', confirm);
     }, 1000);
   }
@@ -154,26 +247,37 @@
     if (isPanelOpen) { 
       ui.input.focus(); 
       if (ui.messageList.children.length === 0) {
-        appendMessage('bot', '👋 <strong>Welcome to SaveNote bot!</strong><br><br>To save notes such as Health, write: <code>Post Health to take pills</code><br><br>To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒');
+        appendMessage('bot', `👋 <strong>Welcome to SaveNote bot!</strong><br><br>
+To save notes such as Health, write: <code>Post Health to take pills</code><br>
+To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>
+Type <strong>'help'</strong> to see all categories and premium features (Charts, Exports, OCR)! 🚀<br><br>
+Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒`);
       }
     }
   }
 
   function appendMessage(type, content) {
     if (!ui.messageList) return;
-    var isDark = document.body.classList.contains('dark');
+    var isDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
     var row = document.createElement('div');
     row.style = `display:flex; justify-content:${type === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom:12px; width:100%;`;
+    
+    var timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
     var bubble = document.createElement('div');
-    bubble.setAttribute('style', `background:${type === 'user' ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#fff')}; padding:10px; border-radius:10px; max-width:85%; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,0.1);`);
-    bubble.innerHTML = content;
+    var isUser = type === 'user';
+    var bg = isUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#ffffff');
+    var color = isDark ? '#e9edef' : '#111b21';
+    bubble.setAttribute('style', `background:${bg}; color:${color}; padding:10px 12px 14px 12px; border-radius:12px; max-width:85%; font-size:14.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; line-height: 1.5; border-${isUser ? 'top-right' : 'top-left'}-radius: 0; position:relative; min-width:80px;`);
+    bubble.innerHTML = content + `<div style="position:absolute; bottom:4px; right:8px; font-size:10px; color:${isDark ? '#8696a0' : '#667781'}; opacity:0.8;">${timeStr}</div>`;
     row.appendChild(bubble);
     ui.messageList.appendChild(row);
     ui.messageList.scrollTop = ui.messageList.scrollHeight;
   }
 
   function simulateTyping() {
-    // Basic typing indicator logic could go here
+    var status = document.getElementById('sn-status');
+    if (status) { status.textContent = 'processing...'; setTimeout(() => { status.textContent = 'online'; }, 1000); }
   }
 
   function init() { loadNotes().then(() => { setInterval(createSidebarButton, 2000); console.log('🤖 [SaveNote] V6 Loaded.'); }); }
