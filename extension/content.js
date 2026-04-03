@@ -124,7 +124,8 @@
 📊 **Dashboard:** View memory charts & trends on our site.<br>
 📅 **Google Exports:** One-click save to Calendar/Sheets in dashboard.<br>
 📷 **OCR:** Upload images to extract & save text!<br><br>
-**Privacy:** 100% Local. Your data never leaves your browser. 🔒`);
+**Privacy:** 100% Local. Your data never leaves your browser. 🔒<br><br>
+**Support:** If you love this free tool, <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: #008069; font-weight: bold;">Buy me a coffee ☕</a>`);
       }, 800);
       return;
     }
@@ -157,8 +158,6 @@
     // 3. SAVE LOGIC (Post or Auto)
     var contentToSave = rawText;
     var forcedCat = null;
-    
-    // Check for "Post [Category] ..."
     var postMatch = lower.match(/^post\s+(\w+)\s+(.*)/i);
     if (postMatch) {
         var potentialCat = postMatch[1].toLowerCase();
@@ -170,13 +169,7 @@
 
     setTimeout(() => {
       var cat = forcedCat || categorize(contentToSave);
-      var note = { 
-        id: Date.now(), 
-        category: cat, 
-        raw_message: contentToSave, 
-        attachments: atts, 
-        created_at: new Date().toISOString() 
-      };
+      var note = { id: Date.now(), category: cat, raw_message: contentToSave, attachments: atts, created_at: new Date().toISOString() };
       notes.unshift(note);
       chrome.storage.local.set({ notes: notes });
       
@@ -248,10 +241,12 @@
       ui.input.focus(); 
       if (ui.messageList.children.length === 0) {
         appendMessage('bot', `👋 <strong>Welcome to SaveNote bot!</strong><br><br>
-To save notes such as Health, write: <code>Post Health to take pills</code><br>
-To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>
-Type <strong>'help'</strong> to see all categories and premium features (Charts, Exports, OCR)! 🚀<br><br>
-Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒`);
+This product is <strong>completely free</strong> and I intend to keep it that way for the community. ❤️<br><br>
+<strong>How to use:</strong><br>
+📝 Save Health: <code>Post Health to take pills</code><br>
+🔍 Query Finance: <code>Return Finance my last note about savings</code><br><br>
+I run hard-coded and simple only on your browser to keep your data safe! 🔒<br><br>
+Support maintenance: <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: #008069; font-weight: bold;">buymeacoffee.com/JackAmi ☕</a>`);
       }
     }
   }
@@ -261,9 +256,7 @@ Remember, I run hard-coded and simple only on your browser to keep your data saf
     var isDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
     var row = document.createElement('div');
     row.style = `display:flex; justify-content:${type === 'user' ? 'flex-end' : 'flex-start'}; margin-bottom:12px; width:100%;`;
-    
     var timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
     var bubble = document.createElement('div');
     var isUser = type === 'user';
     var bg = isUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#ffffff');

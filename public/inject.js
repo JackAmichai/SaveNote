@@ -178,7 +178,8 @@
 📊 **Dashboard:** View memory charts & trends on our site.<br>
 📅 **Google Exports:** One-click save to Calendar/Sheets in dashboard.<br>
 📷 **OCR:** Upload images to extract & save text!<br><br>
-**Privacy:** 100% Local. Your data never leaves your browser. 🔒`);
+**Privacy:** 100% Local. Your data never leaves your browser. 🔒<br><br>
+**Support:** If you love this free tool, <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: #008069; font-weight: bold;">Buy me a coffee ☕</a>`);
         } else if (lower.startsWith('return ') || lower.startsWith('query ') || lower.includes('where') || lower.includes('what') || lower.includes('show')) {
             var results = searchNotes(lower.replace(/^(return|query)\s+/i, ''));
             if (results.length > 0) {
@@ -194,19 +195,10 @@
                 appendMessage('bot', res);
             } else { appendMessage('bot', `❌ Sorry, I couldn't find anything matching that.`); }
         } else {
-            var contentToSave = rawText;
-            var forcedCat = null;
-            var postMatch = lower.match(/^post\s+(\w+)\s+(.*)/i);
-            if (postMatch) {
-                var potentialCat = postMatch[1].toLowerCase();
-                if (CATEGORY_EMOJI[potentialCat]) {
-                    forcedCat = potentialCat;
-                    contentToSave = postMatch[2];
-                }
-            }
-            var cat = forcedCat || categorize(contentToSave);
+            var content = lower.startsWith('post ') ? text.substring(5) : text;
+            var cat = categorize(content);
             var notes = loadNotes();
-            notes.unshift({ category: cat, raw_message: contentToSave, atts: atts || [], created_at: new Date().toISOString() });
+            notes.unshift({ category: cat, raw_message: content, atts: atts || [], created_at: new Date().toISOString() });
             saveNotes(notes);
             var botConfirm = `${CATEGORY_EMOJI[cat]} <strong>Saved to ${cat}!</strong>`;
             if (atts && atts.some(a => a.ocr_text)) botConfirm += "<br>🔍 OCR extracted text from images.";
@@ -225,10 +217,12 @@
       ui.input.focus(); 
       if (ui.messageList.children.length === 0) {
         appendMessage('bot', `👋 <strong>Welcome to SaveNote bot!</strong><br><br>
-To save notes such as Health, write: <code>Post Health to take pills</code><br>
-To retrieve data about Finance, write: <code>Return Finance my last note about savings</code><br><br>
-Type <strong>'help'</strong> to see all categories and premium features (Charts, Exports, OCR)! 🚀<br><br>
-Remember, I run hard-coded and simple only on your browser to keep your data safe! 🔒`);
+This product is <strong>completely free</strong> and I intend to keep it that way for the community. ❤️<br><br>
+<strong>How to use:</strong><br>
+📝 Save Health: <code>Post Health to take pills</code><br>
+🔍 Query Finance: <code>Return Finance my last note about savings</code><br><br>
+I run hard-coded and simple only on your browser to keep your data safe! 🔒<br><br>
+Support maintenance: <a href="https://buymeacoffee.com/JackAmi" target="_blank" style="color: #008069; font-weight: bold;">buymeacoffee.com/JackAmi ☕</a>`);
       }
     }
   }
